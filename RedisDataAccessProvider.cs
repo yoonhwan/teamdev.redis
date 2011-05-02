@@ -89,14 +89,14 @@ namespace TeamDev.Redis
 
       if (Configuration.Password != null)
       {
-        InternalSendCommand(RedisCommand.AUTH, Configuration.Password);
+        SendCommand(RedisCommand.AUTH, Configuration.Password);
         WaitComplete();
       }
     }
 
     private void Quit()
     {
-      if (_socket != null) InternalSendCommand(RedisCommand.QUIT);
+      if (_socket != null) SendCommand(RedisCommand.QUIT);
     }
 
     public override void Close()
@@ -110,7 +110,7 @@ namespace TeamDev.Redis
 
     #region communication methods
 
-    public bool InternalSendCommand(RedisCommand command, params string[] args)
+    public bool SendCommand(RedisCommand command, params string[] args)
     {
       this.Connect();
 
@@ -146,7 +146,7 @@ namespace TeamDev.Redis
       return true;
     }
 
-    public bool InternalSendCommand(RedisCommand command, byte[] datas, params string[] args)
+    public bool SendCommand(RedisCommand command, byte[] datas, params string[] args)
     {
       this.Connect();
 
@@ -195,7 +195,7 @@ namespace TeamDev.Redis
       return true;
     }
 
-    public bool InternalSendCommand(RedisCommand command, IDictionary<string, byte[]> datas, params string[] args)
+    public bool SendCommand(RedisCommand command, IDictionary<string, byte[]> datas, params string[] args)
     {
       this.Connect();
 
@@ -252,14 +252,14 @@ namespace TeamDev.Redis
       return true;
     }
 
-    public bool InternalSendCommand(RedisCommand command, IDictionary<string, string> datas, params string[] args)
+    public bool SendCommand(RedisCommand command, IDictionary<string, string> datas, params string[] args)
     {
       var result = new Dictionary<string, byte[]>();
 
       foreach (var kv in datas)
         result.Add(kv.Key, Encoding.UTF8.GetBytes(kv.Value));
 
-      return InternalSendCommand(command, result, args);
+      return SendCommand(command, result, args);
     }
 
     public void WaitComplete()

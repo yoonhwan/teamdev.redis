@@ -11,13 +11,13 @@ namespace TeamDev.Redis.LanguageItems
   {
     public static bool Expire(this IComplexItem item, int seconds)
     {
-      item.Provider.InternalSendCommand(RedisCommand.EXPIRE, item.KeyName, seconds.ToString());
+      item.Provider.SendCommand(RedisCommand.EXPIRE, item.KeyName, seconds.ToString());
       return item.Provider.ReadInt() == 1;
     }
 
     public static bool Persist(this IComplexItem item)
     {
-      item.Provider.InternalSendCommand(RedisCommand.EXPIRE, item.KeyName);
+      item.Provider.SendCommand(RedisCommand.EXPIRE, item.KeyName);
       return item.Provider.ReadInt() == 1;
     }
 
@@ -29,7 +29,7 @@ namespace TeamDev.Redis.LanguageItems
 
     public static int TTL(this IComplexItem item)
     {
-      item.Provider.InternalSendCommand(RedisCommand.TTL, item.KeyName);
+      item.Provider.SendCommand(RedisCommand.TTL, item.KeyName);
       return item.Provider.ReadInt();
     }
   }

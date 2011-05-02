@@ -14,19 +14,19 @@ namespace TeamDev.Redis.LanguageItems
 
     public void Add(string value)
     {
-      _provider.InternalSendCommand(RedisCommand.SADD, _name, value);
+      _provider.SendCommand(RedisCommand.SADD, _name, value);
       _provider.WaitComplete();
     }
 
     public void Clear()
     {
-      _provider.InternalSendCommand(RedisCommand.DEL, _name);
+      _provider.SendCommand(RedisCommand.DEL, _name);
       _provider.WaitComplete();
     }
 
     public bool IsMember(string value)
     {
-      _provider.InternalSendCommand(RedisCommand.SISMEMBER, _name, value);
+      _provider.SendCommand(RedisCommand.SISMEMBER, _name, value);
       return _provider.ReadInt() == 1;
     }
 
@@ -34,14 +34,14 @@ namespace TeamDev.Redis.LanguageItems
     {
       get
       {
-        _provider.InternalSendCommand(RedisCommand.SMEMBERS, _name);
+        _provider.SendCommand(RedisCommand.SMEMBERS, _name);
         return _provider.ReadMultiString();
       }
     }
 
     public void Remove(string value)
     {
-      _provider.InternalSendCommand(RedisCommand.SREM, _name, value);
+      _provider.SendCommand(RedisCommand.SREM, _name, value);
       _provider.WaitComplete();
     }
 
@@ -52,7 +52,7 @@ namespace TeamDev.Redis.LanguageItems
       args.Add(_name);
       args.AddRange(sets);
 
-      _provider.InternalSendCommand(RedisCommand.SUNION, args.ToArray());
+      _provider.SendCommand(RedisCommand.SUNION, args.ToArray());
       return _provider.ReadMultiString();
     }
 
@@ -63,14 +63,14 @@ namespace TeamDev.Redis.LanguageItems
       args.Add(_name);
       args.AddRange(sets);
 
-      _provider.InternalSendCommand(RedisCommand.SINTER, args.ToArray());
+      _provider.SendCommand(RedisCommand.SINTER, args.ToArray());
       return _provider.ReadMultiString();
     }
 
     [Description("SMOVE -> Move member from the set at source to the set at destination. This operation is atomic")]
     public bool Move(string destination, string value)
     {
-      _provider.InternalSendCommand(RedisCommand.SMOVE, _name, destination, value);
+      _provider.SendCommand(RedisCommand.SMOVE, _name, destination, value);
       return _provider.ReadInt() == 1;
     }
 
@@ -81,7 +81,7 @@ namespace TeamDev.Redis.LanguageItems
       args.Add(_name);
       args.AddRange(sets);
 
-      _provider.InternalSendCommand(RedisCommand.SDIFF, args.ToArray());
+      _provider.SendCommand(RedisCommand.SDIFF, args.ToArray());
       return _provider.ReadMultiString();
 
     }
@@ -90,7 +90,7 @@ namespace TeamDev.Redis.LanguageItems
     {
       get
       {
-        _provider.InternalSendCommand(RedisCommand.SCARD, _name);
+        _provider.SendCommand(RedisCommand.SCARD, _name);
         return _provider.ReadInt();
       }
     }
@@ -98,7 +98,7 @@ namespace TeamDev.Redis.LanguageItems
     [Description("SPOP -> Removes and returns a random element from the set value stored at key")]
     public string Pop()
     {
-      _provider.InternalSendCommand(RedisCommand.SPOP, _name);
+      _provider.SendCommand(RedisCommand.SPOP, _name);
       return _provider.ReadString();
     }
 
@@ -107,7 +107,7 @@ namespace TeamDev.Redis.LanguageItems
     {
       get
       {
-        _provider.InternalSendCommand(RedisCommand.SRANDMEMBER, _name);
+        _provider.SendCommand(RedisCommand.SRANDMEMBER, _name);
         return _provider.ReadString();
       }
     }

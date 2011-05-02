@@ -13,7 +13,7 @@ namespace TeamDev.Redis.LanguageItems
 
     public void Clear()
     {
-      _provider.InternalSendCommand(RedisCommand.DEL, _name);
+      _provider.SendCommand(RedisCommand.DEL, _name);
       _provider.WaitComplete();
     }
 
@@ -21,25 +21,25 @@ namespace TeamDev.Redis.LanguageItems
     {
       get
       {
-        _provider.InternalSendCommand(RedisCommand.HGET, _name, field);
+        _provider.SendCommand(RedisCommand.HGET, _name, field);
         return _provider.ReadString();
       }
       set
       {
-        _provider.InternalSendCommand(RedisCommand.HSET, _name, field, value);
+        _provider.SendCommand(RedisCommand.HSET, _name, field, value);
         _provider.WaitComplete();
       }
     }
 
     public string Get(string field)
     {
-      _provider.InternalSendCommand(RedisCommand.HGET, _name, field);
+      _provider.SendCommand(RedisCommand.HGET, _name, field);
       return _provider.ReadString();
     }
 
     public bool Set(string field, string value)
     {
-      _provider.InternalSendCommand(RedisCommand.HSET, _name, field, value);
+      _provider.SendCommand(RedisCommand.HSET, _name, field, value);
       return _provider.ReadInt() == 1;
     }
 
@@ -47,7 +47,7 @@ namespace TeamDev.Redis.LanguageItems
     {
       get
       {
-        _provider.InternalSendCommand(RedisCommand.HGETALL, _name);
+        _provider.SendCommand(RedisCommand.HGETALL, _name);
         var result = _provider.ReadMultiString();
 
         var values = new List<KeyValuePair<string, string>>();
@@ -67,7 +67,7 @@ namespace TeamDev.Redis.LanguageItems
     {
       get
       {
-        _provider.InternalSendCommand(RedisCommand.HKEYS, _name);
+        _provider.SendCommand(RedisCommand.HKEYS, _name);
         return _provider.ReadMultiString();
       }
     }
@@ -76,26 +76,26 @@ namespace TeamDev.Redis.LanguageItems
     {
       get
       {
-        _provider.InternalSendCommand(RedisCommand.HVALS, _name);
+        _provider.SendCommand(RedisCommand.HVALS, _name);
         return _provider.ReadMultiString();
       }
     }
 
     public bool ContainsKey(string key)
     {
-      _provider.InternalSendCommand(RedisCommand.HEXISTS, _name, key);
+      _provider.SendCommand(RedisCommand.HEXISTS, _name, key);
       return _provider.ReadInt() == 1;
     }
 
     public bool Delete(string field)
     {
-      _provider.InternalSendCommand(RedisCommand.HDEL, _name, field);
+      _provider.SendCommand(RedisCommand.HDEL, _name, field);
       return _provider.ReadInt() == 1;
     }
 
     public void Set(IDictionary<string, string> datas)
     {
-      _provider.InternalSendCommand(RedisCommand.HMSET, datas, _name);
+      _provider.SendCommand(RedisCommand.HMSET, datas, _name);
       _provider.WaitComplete();
     }
 
@@ -105,7 +105,7 @@ namespace TeamDev.Redis.LanguageItems
       args.Add(_name);
       args.AddRange(keys);
 
-      _provider.InternalSendCommand(RedisCommand.HMSET, args.ToArray());
+      _provider.SendCommand(RedisCommand.HMSET, args.ToArray());
       return _provider.ReadMultiString();
     }
 
@@ -113,7 +113,7 @@ namespace TeamDev.Redis.LanguageItems
     {
       get
       {
-        _provider.InternalSendCommand(RedisCommand.HLEN, _name);
+        _provider.SendCommand(RedisCommand.HLEN, _name);
         return _provider.ReadInt();
       }
     }

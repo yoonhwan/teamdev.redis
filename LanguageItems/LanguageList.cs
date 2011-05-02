@@ -15,28 +15,28 @@ namespace TeamDev.Redis.LanguageItems
     [Description("Append a value to the list")]
     public void Append(string value)
     {
-      _provider.InternalSendCommand(RedisCommand.RPUSH, _name, value);
+      _provider.SendCommand(RedisCommand.RPUSH, _name, value);
       _provider.WaitComplete();
     }
 
     [Description("Prepend a value to the list")]
     public void Prepend(string value)
     {
-      _provider.InternalSendCommand(RedisCommand.LPUSH, _name, value);
+      _provider.SendCommand(RedisCommand.LPUSH, _name, value);
       _provider.WaitComplete();
     }
 
     [Description("Remove all elements with the given value from the list. ")]
     public void Remove(string value)
     {
-      _provider.InternalSendCommand(RedisCommand.LREM, _name, "0", value);
+      _provider.SendCommand(RedisCommand.LREM, _name, "0", value);
       _provider.WaitComplete();
     }
 
     [Description("Clear the list")]
     public void Clear()
     {
-      _provider.InternalSendCommand(RedisCommand.DEL, _name);
+      _provider.SendCommand(RedisCommand.DEL, _name);
       _provider.WaitComplete();
     }
 
@@ -54,25 +54,25 @@ namespace TeamDev.Redis.LanguageItems
     {
       get
       {
-        _provider.InternalSendCommand(RedisCommand.LINDEX, _name, index.ToString());
+        _provider.SendCommand(RedisCommand.LINDEX, _name, index.ToString());
         return Encoding.UTF8.GetString(_provider.ReadData());
       }
       set
       {
-        _provider.InternalSendCommand(RedisCommand.LSET, _name, index.ToString(), value);
+        _provider.SendCommand(RedisCommand.LSET, _name, index.ToString(), value);
         _provider.WaitComplete();
       }
     }
 
     public string LeftPop()
     {
-      _provider.InternalSendCommand(RedisCommand.LPOP, _name);
+      _provider.SendCommand(RedisCommand.LPOP, _name);
       return _provider.ReadString();
     }
 
     public string RightPop()
     {
-      _provider.InternalSendCommand(RedisCommand.RPOP, _name);
+      _provider.SendCommand(RedisCommand.RPOP, _name);
       return _provider.ReadString();
     }
 
@@ -84,14 +84,14 @@ namespace TeamDev.Redis.LanguageItems
     {
       get
       {
-        _provider.InternalSendCommand(RedisCommand.LLEN, _name);
+        _provider.SendCommand(RedisCommand.LLEN, _name);
         return _provider.ReadInt();
       }
     }
 
     public string[] Range(int startindex, int endindex)
     {
-      _provider.InternalSendCommand(RedisCommand.LRANGE, _name, startindex.ToString(), endindex.ToString());
+      _provider.SendCommand(RedisCommand.LRANGE, _name, startindex.ToString(), endindex.ToString());
       _provider.ReadData();
       return _provider.ReadMultiString();
     }
@@ -100,7 +100,7 @@ namespace TeamDev.Redis.LanguageItems
     {
       get
       {
-        _provider.InternalSendCommand(RedisCommand.LRANGE, _name, "0", "-1");
+        _provider.SendCommand(RedisCommand.LRANGE, _name, "0", "-1");
         return _provider.ReadMultiString();
       }
     }

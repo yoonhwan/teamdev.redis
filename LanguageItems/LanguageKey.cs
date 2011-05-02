@@ -15,13 +15,13 @@ namespace TeamDev.Redis.LanguageItems
 
     public bool Remove(params string[] keys)
     {
-      _provider.InternalSendCommand(RedisCommand.DEL, keys);
+      _provider.SendCommand(RedisCommand.DEL, keys);
       return _provider.ReadInt() == 1;
     }
 
     public bool Exists(string key)
     {
-      _provider.InternalSendCommand(RedisCommand.EXISTS, key);
+      _provider.SendCommand(RedisCommand.EXISTS, key);
       return _provider.ReadInt() == 1;
     }
 
@@ -30,14 +30,14 @@ namespace TeamDev.Redis.LanguageItems
     {
       get
       {
-        _provider.InternalSendCommand(RedisCommand.KEYS, pattern);
+        _provider.SendCommand(RedisCommand.KEYS, pattern);
         return _provider.ReadMultiString();
       }
     }
 
     public string Type(string key)
     {
-      _provider.InternalSendCommand(RedisCommand.TYPE, key);
+      _provider.SendCommand(RedisCommand.TYPE, key);
       return _provider.ReadString();
     }
 
