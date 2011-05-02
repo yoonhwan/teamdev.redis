@@ -105,7 +105,7 @@ namespace TeamDev.Redis.LanguageItems
       args.Add(_name);
       args.AddRange(keys);
 
-      _provider.SendCommand(RedisCommand.HMSET, args.ToArray());
+      _provider.SendCommand(RedisCommand.HMGET, args.ToArray());
       return _provider.ReadMultiString();
     }
 
