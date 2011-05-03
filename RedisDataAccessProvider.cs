@@ -276,15 +276,14 @@ namespace TeamDev.Redis
 
     public int ReadInt()
     {
-      int c = _bstream.ReadByte();
-      if (c == -1)
-        throw new Exception("No more data");
-
       var s = ReadLine();
-      int n = 0;
-      if (int.TryParse(s, out n))
-        return n;
-
+      var c = s[0];
+      if (s[0] == ':')
+      {
+        int n = 0;
+        if (int.TryParse(s.Substring(1), out n))
+          return n;
+      }
       Log((char)c + s);
       if (c == '-')
         throw new Exception(s.StartsWith("ERR") ? s.Substring(4) : s);
@@ -312,20 +311,23 @@ namespace TeamDev.Redis
         if (Int32.TryParse(r.Substring(1), out n))
         {
           byte[] retbuf = new byte[n];
-
-          int bytesRead = 0;
-          do
+          if (n > 0)
           {
-            int read = _bstream.Read(retbuf, bytesRead, n - bytesRead);
-            if (read < 1)
-              throw new Exception("Invalid termination mid stream");
-            bytesRead += read;
+
+            int bytesRead = 0;
+            do
+            {
+              int read = _bstream.Read(retbuf, bytesRead, n - bytesRead);
+              if (read < 1)
+                throw new Exception("Invalid termination mid stream");
+              bytesRead += read;
+            }
+            while (bytesRead < n);
           }
-          while (bytesRead < n);
           if (_bstream.ReadByte() != '\r' || _bstream.ReadByte() != '\n')
             throw new Exception("Invalid termination");
-
           Log("R: {0}, {1}", r, Encoding.UTF8.GetString(retbuf));
+
           return retbuf;
         }
         throw new Exception("Invalid length");

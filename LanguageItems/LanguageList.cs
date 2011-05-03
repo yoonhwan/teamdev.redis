@@ -16,21 +16,21 @@ namespace TeamDev.Redis.LanguageItems
     public void Append(string value)
     {
       _provider.SendCommand(RedisCommand.RPUSH, _name, value);
-      _provider.WaitComplete();
+      _provider.ReadInt();
     }
 
     [Description("Prepend a value to the list")]
     public void Prepend(string value)
     {
       _provider.SendCommand(RedisCommand.LPUSH, _name, value);
-      _provider.WaitComplete();
+      _provider.ReadInt();
     }
 
     [Description("Remove all elements with the given value from the list. ")]
     public void Remove(string value)
     {
       _provider.SendCommand(RedisCommand.LREM, _name, "0", value);
-      _provider.WaitComplete();
+      _provider.ReadInt();
     }
 
     [Description("Clear the list")]

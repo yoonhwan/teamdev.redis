@@ -12,10 +12,10 @@ namespace TeamDev.Redis.LanguageItems
     internal string _name;
     internal RedisDataAccessProvider _provider;
 
-    public void Add(string value)
+    public bool Add(string value)
     {
       _provider.SendCommand(RedisCommand.SADD, _name, value);
-      _provider.WaitComplete();
+      return _provider.ReadInt() == 1;
     }
 
     public void Clear()
