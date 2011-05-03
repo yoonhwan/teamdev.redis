@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 11.00
 # Visual Studio 2010
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TeamDev.RedisProvider", "TeamDev.RedisProvider.csproj", "{60EBB8C0-5283-40B5-9413-37864E09CB13}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TeamDev.Redis", "TeamDev.Redis.csproj", "{D24FAE10-ACAC-4E17-A075-7E820B3FBCBA}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -9,10 +9,10 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{60EBB8C0-5283-40B5-9413-37864E09CB13}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{60EBB8C0-5283-40B5-9413-37864E09CB13}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{60EBB8C0-5283-40B5-9413-37864E09CB13}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{60EBB8C0-5283-40B5-9413-37864E09CB13}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D24FAE10-ACAC-4E17-A075-7E820B3FBCBA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D24FAE10-ACAC-4E17-A075-7E820B3FBCBA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D24FAE10-ACAC-4E17-A075-7E820B3FBCBA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D24FAE10-ACAC-4E17-A075-7E820B3FBCBA}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
