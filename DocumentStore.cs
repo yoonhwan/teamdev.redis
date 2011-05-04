@@ -63,11 +63,17 @@ namespace TeamDev.Redis
       return newitem;
     }
 
-    [Description("Persist properties marked with ")]
+    public virtual void PartialSet<T>(IEnumerable<T> items)
+    {
+      foreach (var item in items)
+        PartialSet<T>(item);
+    }
+
+    [Description("Persist properties marked with DocumentValueAttribure")]
     public virtual void PartialSet<T>(T item)
     {
       var key = GetItemKey(item);
-      Provider.Hash[key].Set(Serialize(item));
+      Provider.Hash[key].Set(Serialize(item, true));
     }
 
     [Description("")]

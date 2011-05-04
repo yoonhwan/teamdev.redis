@@ -11,12 +11,12 @@ namespace TeamDev.Redis.LanguageItems
   {
     internal RedisDataAccessProvider Provider { get; set; }
 
-    public T this[string listname]
+    public T this[string name]
     {
       get
       {
         var result = new T();
-        result.Configure(listname, Provider);
+        result.Configure(name, Provider);
         return result;
       }
     }
