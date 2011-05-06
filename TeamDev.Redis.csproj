@@ -57,6 +57,7 @@
     <Compile Include="LanguageItems\LanguageSet.cs" />
     <Compile Include="LanguageItems\LanguageSortedSet.cs" />
     <Compile Include="LanguageItems\TimeExtensions.cs" />
+    <Compile Include="Parallelism.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="RedisCommandsEnum.cs" />
     <Compile Include="RedisDataAccessProvider.cs" />

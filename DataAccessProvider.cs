@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using TeamDev.Redis.LanguageItems;
+using System.Net.Sockets;
 
 namespace TeamDev.Redis
 {
@@ -15,7 +16,7 @@ namespace TeamDev.Redis
       Configuration = new LanguageItems.Configuration();
     }
 
-    public abstract void Connect();
+    public abstract Socket Connect();
     public abstract void Close();
 
   }

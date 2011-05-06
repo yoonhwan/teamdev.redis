@@ -120,11 +120,11 @@ namespace TeamDev.Redis
       if (string.IsNullOrEmpty(value)) return null;
 
       // Is a generico of a valuetype. Probably is a nullable
-      if (type.IsGenericType && type.IsValueType && type.Name.StartsWith("Nullabe"))
+      if (type.IsGenericType && type.IsValueType)
         type = type.GetGenericArguments()[0];
 
       if (type == typeof(Guid)) return new Guid(value);
-      if (type == typeof(DateTime)) return DateTime.Parse(value, CultureInfo.InvariantCulture);
+      if (type == typeof(DateTime) || type == typeof(Nullable<DateTime>)) return DateTime.Parse(value, CultureInfo.InvariantCulture);
       if (type == typeof(string)) return value;
 
       if (type.IsValueType)
@@ -198,6 +198,8 @@ namespace TeamDev.Redis
 
     public virtual string GetItemKey<T>(T item)
     {
+      if (item == null) throw new ArgumentNullException("Item cannot be null");
+
       var pi = StoreEntityTypesCache.GetTypeKey(typeof(T));
       var key = string.Format("[{0}_{1}:{2}]", typeof(T).Name, pi.Name, GetStringValue(pi.GetValue(item, null)));
       return key;

@@ -7,15 +7,20 @@ using System.IO;
 using System.Diagnostics;
 using TeamDev.Redis.LanguageItems;
 using TeamDev.Redis.Interface;
+using System.Threading;
 
 namespace TeamDev.Redis
 {
   public class RedisDataAccessProvider : DataAccessProvider, IDisposable
   {
     #region private fields
-    private Socket _socket;
-    private BufferedStream _bstream;
-    private byte[] _end_data = new byte[] { (byte)'\r', (byte)'\n' };
+    //private Socket _socket;
+
+    private volatile ReaderWriterLock _socketslock = new ReaderWriterLock();
+    private volatile Dictionary<int, Socket> _sockets = new Dictionary<int, Socket>();
+    private volatile Dictionary<int, BufferedStream> _bstreams = new Dictionary<int, BufferedStream>();
+    private volatile byte[] _end_data = new byte[] { (byte)'\r', (byte)'\n' };
+
     #endregion
 
     public LanguageItemCollection<LanguageList> List { get; private set; }
@@ -70,40 +75,101 @@ namespace TeamDev.Redis
     #endregion
 
     #region connection methods
-    public override void Connect()
+    public override Socket Connect()
     {
-      // I already have a socket.
-      if (_socket != null) return;
+      var tid = Thread.CurrentThread.ManagedThreadId;
 
-      _socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-      _socket.NoDelay = true;
-      _socket.SendTimeout = Configuration.SendTimeout;
-      _socket.Connect(Configuration.Host, Configuration.Port);
-      if (!_socket.Connected)
+      _socketslock.AcquireReaderLock(1000);
+      if (_sockets.ContainsKey(tid))
       {
-        _socket.Close();
-        _socket = null;
-        return;
+        var result = _sockets[tid];
+        _socketslock.ReleaseReaderLock();
+        return result;
       }
-      _bstream = new BufferedStream(new NetworkStream(_socket), 16 * 1024);
+
+      var newsocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+      newsocket.NoDelay = true;
+      newsocket.SendTimeout = Configuration.SendTimeout;
+
+      newsocket.Connect(Configuration.Host, Configuration.Port);
+      if (!newsocket.Connected)
+      {
+        newsocket.Close();
+        return null;
+      }
+
+      _socketslock.UpgradeToWriterLock(1000);
+      _sockets.Add(tid, newsocket);
+      if (_bstreams.ContainsKey(tid))
+        _bstreams[tid] = new BufferedStream(new NetworkStream(newsocket), 16 * 1024);
+      else
+        _bstreams.Add(tid, new BufferedStream(new NetworkStream(newsocket), 16 * 1024));
+      _socketslock.ReleaseLock();
 
       if (Configuration.Password != null)
       {
         SendCommand(RedisCommand.AUTH, Configuration.Password);
         WaitComplete();
       }
+
+      return newsocket;
     }
 
     private void Quit()
     {
-      if (_socket != null) SendCommand(RedisCommand.QUIT);
+      if (GetSocket() != null) SendCommand(RedisCommand.QUIT);
+    }
+
+    private Socket GetSocket()
+    {
+      var tid = Thread.CurrentThread.ManagedThreadId;
+
+      try
+      {
+        _socketslock.AcquireReaderLock(1000);
+        if (_sockets.ContainsKey(tid))
+          return _sockets[tid];
+        return null;
+      }
+      finally
+      {
+        _socketslock.ReleaseLock();
+      }
+    }
+
+    private BufferedStream GetBStream()
+    {
+      var tid = Thread.CurrentThread.ManagedThreadId;
+      try
+      {
+        _socketslock.AcquireReaderLock(1000);
+        var result = _bstreams[tid];
+        return result;
+      }
+      finally
+      {
+        _socketslock.ReleaseLock();
+      }
+    }
+
+    private void RemoveSocket()
+    {
+      var tid = Thread.CurrentThread.ManagedThreadId;
+
+      _socketslock.AcquireReaderLock(1000);
+      if (_sockets.ContainsKey(tid))
+      {
+        _socketslock.UpgradeToWriterLock(1000);
+        _sockets.Remove(tid);
+      }
+      _socketslock.ReleaseLock();
     }
 
     public override void Close()
     {
       Quit();
-      _socket.Close();
-      _socket = null;
+      GetSocket().Close();
+      RemoveSocket();
     }
 
     #endregion
@@ -133,13 +199,13 @@ namespace TeamDev.Redis
       try
       {
         Log("S: " + String.Format(cmd, args));
-        _socket.Send(r);
+        GetSocket().Send(r);
       }
       catch (SocketException)
       {
         // timeout;
-        _socket.Close();
-        _socket = null;
+        GetSocket().Close();
+        RemoveSocket();
 
         return false;
       }
@@ -170,25 +236,27 @@ namespace TeamDev.Redis
         }
 
       byte[] r = Encoding.UTF8.GetBytes(sb.ToString());
+      var socket = GetSocket();
+
       try
       {
         Log("S: " + String.Format(cmd, args));
         // Send command and args. 
-        _socket.Send(r);
+        socket.Send(r);
 
         // Send data
         if (datas != null && datas.Length > 0)
         {
-          _socket.Send(datas);
-          _socket.Send(Encoding.UTF8.GetBytes("\r\n"));
+          socket.Send(datas);
+          socket.Send(Encoding.UTF8.GetBytes("\r\n"));
         }
 
       }
       catch (SocketException)
       {
         // timeout;
-        _socket.Close();
-        _socket = null;
+        socket.Close();
+        RemoveSocket();
 
         return false;
       }
@@ -236,16 +304,17 @@ namespace TeamDev.Redis
         }
       }
 
+      var socket = GetSocket();
       try
       {
         Log("S: " + String.Format(cmd, args));
-        _socket.Send(ms.ToArray());
+        socket.Send(ms.ToArray());
       }
       catch (SocketException)
       {
         // timeout;
-        _socket.Close();
-        _socket = null;
+        socket.Close();
+        RemoveSocket();
 
         return false;
       }
@@ -264,7 +333,7 @@ namespace TeamDev.Redis
 
     public void WaitComplete()
     {
-      int c = _bstream.ReadByte();
+      int c = GetBStream().ReadByte();
       if (c == -1)
         throw new Exception("No more data");
 
@@ -308,6 +377,7 @@ namespace TeamDev.Redis
           return null;
         int n;
 
+        var bstream = GetBStream();
         if (Int32.TryParse(r.Substring(1), out n))
         {
           byte[] retbuf = new byte[n];
@@ -317,14 +387,14 @@ namespace TeamDev.Redis
             int bytesRead = 0;
             do
             {
-              int read = _bstream.Read(retbuf, bytesRead, n - bytesRead);
+              int read = bstream.Read(retbuf, bytesRead, n - bytesRead);
               if (read < 1)
                 throw new Exception("Invalid termination mid stream");
               bytesRead += read;
             }
             while (bytesRead < n);
           }
-          if (_bstream.ReadByte() != '\r' || _bstream.ReadByte() != '\n')
+          if (bstream.ReadByte() != '\r' || bstream.ReadByte() != '\n')
             throw new Exception("Invalid termination");
           Log("R: {0}, {1}", r, Encoding.UTF8.GetString(retbuf));
 
@@ -405,8 +475,8 @@ namespace TeamDev.Redis
     {
       var sb = new StringBuilder();
       int c;
-
-      while ((c = _bstream.ReadByte()) != -1)
+      var bstream = GetBStream();
+      while ((c = bstream.ReadByte()) != -1)
       {
         if (c == '\r')
           continue;
@@ -420,7 +490,7 @@ namespace TeamDev.Redis
     [Conditional("DEBUG")]
     private void Log(string fmt, params object[] args)
     {
-      Console.WriteLine("{0}", String.Format(fmt, args).Trim());
+      //Console.WriteLine("{0}", String.Format(fmt, args).Trim());
     }
 
     #endregion
