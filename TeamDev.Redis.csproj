@@ -58,6 +58,7 @@
     <Compile Include="LanguageItems\LanguageMessaging.cs" />
     <Compile Include="LanguageItems\LanguageSet.cs" />
     <Compile Include="LanguageItems\LanguageSortedSet.cs" />
+    <Compile Include="LanguageItems\LanguageString.cs" />
     <Compile Include="LanguageItems\LanguageTransactions.cs" />
     <Compile Include="LanguageItems\TimeExtensions.cs" />
     <Compile Include="Parallelism.cs" />

@@ -28,6 +28,7 @@ namespace TeamDev.Redis
     public LanguageItemCollection<LanguageSet> Set { get; private set; }
     public LanguageItemCollection<LanguageSortedSet> SortedSet { get; private set; }
     public LanguageItemCollection<LanguageHash> Hash { get; private set; }
+    public LanguageItemCollection<LanguageString> Strings { get; private set; }
     public LanguageKey Key { get; private set; }
     public LanguageTransactions Transaction { get; private set; }
     public LanguageMessaging Messaging { get; private set; }
@@ -42,9 +43,10 @@ namespace TeamDev.Redis
       base.Configuration.ReceiveTimeout = -1;
 
       List = new LanguageItemCollection<LanguageList>() { Provider = this };
-      Set = new LanguageItemCollection<LanguageSet>() { Provider = this }; ;
-      SortedSet = new LanguageItemCollection<LanguageSortedSet>() { Provider = this }; ;
-      Hash = new LanguageItemCollection<LanguageHash>() { Provider = this }; ;
+      Set = new LanguageItemCollection<LanguageSet>() { Provider = this };
+      SortedSet = new LanguageItemCollection<LanguageSortedSet>() { Provider = this };
+      Hash = new LanguageItemCollection<LanguageHash>() { Provider = this };
+      this.Strings = new LanguageItemCollection<LanguageString>() { Provider = this };
       Key = new LanguageKey();
       Transaction = new LanguageTransactions();
       Messaging = new LanguageMessaging();
@@ -52,7 +54,6 @@ namespace TeamDev.Redis
       ((ILanguageItem)Key).Configure(string.Empty, this);
       ((ILanguageItem)Transaction).Configure(string.Empty, this);
       ((ILanguageItem)Messaging).Configure(string.Empty, this);
-
     }
 
     #endregion
@@ -528,7 +529,7 @@ namespace TeamDev.Redis
     [Conditional("DEBUG")]
     private void Log(string fmt, params object[] args)
     {
-      //Console.WriteLine("{0}", String.Format(fmt, args).Trim());
+      //Debug.WriteLine("{0}", String.Format(fmt, args).Trim());
     }
 
     #endregion

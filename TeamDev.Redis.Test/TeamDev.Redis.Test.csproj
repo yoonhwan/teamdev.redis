@@ -45,9 +45,9 @@
     </CodeAnalysisDependentAssemblyPaths>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="aspnet_Users.Entity.cs" />
+    <Compile Include="HashTest.cs" />
+    <Compile Include="KeysTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="UnitTest1.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\TeamDev.Redis.csproj">
