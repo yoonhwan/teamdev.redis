@@ -3,6 +3,8 @@ Microsoft Visual Studio Solution File, Format Version 11.00
 # Visual Studio 2010
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TeamDev.Redis", "TeamDev.Redis.csproj", "{D24FAE10-ACAC-4E17-A075-7E820B3FBCBA}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TeamDev.Redis.Test", "TeamDev.Redis.Test\TeamDev.Redis.Test.csproj", "{9C92B6BD-1F5F-49EC-9B69-02E4DE1B5F5B}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -23,6 +25,16 @@ Global
 		{D24FAE10-ACAC-4E17-A075-7E820B3FBCBA}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
 		{D24FAE10-ACAC-4E17-A075-7E820B3FBCBA}.Release|Mixed Platforms.Build.0 = Release|Any CPU
 		{D24FAE10-ACAC-4E17-A075-7E820B3FBCBA}.Release|x86.ActiveCfg = Release|Any CPU
+		{9C92B6BD-1F5F-49EC-9B69-02E4DE1B5F5B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9C92B6BD-1F5F-49EC-9B69-02E4DE1B5F5B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9C92B6BD-1F5F-49EC-9B69-02E4DE1B5F5B}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
+		{9C92B6BD-1F5F-49EC-9B69-02E4DE1B5F5B}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
+		{9C92B6BD-1F5F-49EC-9B69-02E4DE1B5F5B}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{9C92B6BD-1F5F-49EC-9B69-02E4DE1B5F5B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9C92B6BD-1F5F-49EC-9B69-02E4DE1B5F5B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9C92B6BD-1F5F-49EC-9B69-02E4DE1B5F5B}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
+		{9C92B6BD-1F5F-49EC-9B69-02E4DE1B5F5B}.Release|Mixed Platforms.Build.0 = Release|Any CPU
+		{9C92B6BD-1F5F-49EC-9B69-02E4DE1B5F5B}.Release|x86.ActiveCfg = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

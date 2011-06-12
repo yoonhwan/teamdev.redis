@@ -30,6 +30,7 @@ namespace TeamDev.Redis
     public LanguageItemCollection<LanguageHash> Hash { get; private set; }
     public LanguageKey Key { get; private set; }
     public LanguageTransactions Transaction { get; private set; }
+    public LanguageMessaging Messaging { get; private set; }
 
     #region constructor
 
@@ -38,14 +39,20 @@ namespace TeamDev.Redis
     {
       base.Configuration.Host = "localhost";
       base.Configuration.Port = 6379;
+      base.Configuration.ReceiveTimeout = -1;
 
       List = new LanguageItemCollection<LanguageList>() { Provider = this };
-      Set = new LanguageItemCollection<LanguageSet>() { Provider = this };
-      SortedSet = new LanguageItemCollection<LanguageSortedSet>() { Provider = this };
-      Hash = new LanguageItemCollection<LanguageHash>() { Provider = this };
+      Set = new LanguageItemCollection<LanguageSet>() { Provider = this }; ;
+      SortedSet = new LanguageItemCollection<LanguageSortedSet>() { Provider = this }; ;
+      Hash = new LanguageItemCollection<LanguageHash>() { Provider = this }; ;
       Key = new LanguageKey();
-      Transaction = new LanguageTransactions() { _provider = this };
+      Transaction = new LanguageTransactions();
+      Messaging = new LanguageMessaging();
+
       ((ILanguageItem)Key).Configure(string.Empty, this);
+      ((ILanguageItem)Transaction).Configure(string.Empty, this);
+      ((ILanguageItem)Messaging).Configure(string.Empty, this);
+
     }
 
     #endregion
@@ -92,8 +99,11 @@ namespace TeamDev.Redis
 
       var newsocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
       newsocket.NoDelay = true;
-      newsocket.SendTimeout = Configuration.SendTimeout;
-      newsocket.ReceiveTimeout = Configuration.ReceiveTimeout;
+      if (Configuration.SendTimeout > 0)
+        newsocket.SendTimeout = Configuration.SendTimeout;
+
+      if (Configuration.ReceiveTimeout > 0)
+        newsocket.ReceiveTimeout = Configuration.ReceiveTimeout;
 
       newsocket.Connect(Configuration.Host, Configuration.Port);
       if (!newsocket.Connected)
@@ -522,7 +532,6 @@ namespace TeamDev.Redis
     }
 
     #endregion
-
 
   }
 }

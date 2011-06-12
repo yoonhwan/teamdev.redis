@@ -55,6 +55,7 @@
     <Compile Include="LanguageItems\LanguageItemCollection.cs" />
     <Compile Include="LanguageItems\LanguageKey.cs" />
     <Compile Include="LanguageItems\LanguageList.cs" />
+    <Compile Include="LanguageItems\LanguageMessaging.cs" />
     <Compile Include="LanguageItems\LanguageSet.cs" />
     <Compile Include="LanguageItems\LanguageSortedSet.cs" />
     <Compile Include="LanguageItems\LanguageTransactions.cs" />
