@@ -20,6 +20,7 @@ namespace TeamDev.Redis
     private volatile Dictionary<int, Socket> _sockets = new Dictionary<int, Socket>();
     private volatile Dictionary<int, BufferedStream> _bstreams = new Dictionary<int, BufferedStream>();
     private volatile byte[] _end_data = new byte[] { (byte)'\r', (byte)'\n' };
+    private volatile CommandTracing _tracer = new CommandTracing();
 
     #endregion
 
@@ -28,6 +29,7 @@ namespace TeamDev.Redis
     public LanguageItemCollection<LanguageSortedSet> SortedSet { get; private set; }
     public LanguageItemCollection<LanguageHash> Hash { get; private set; }
     public LanguageKey Key { get; private set; }
+    public LanguageTransactions Transaction { get; private set; }
 
     #region constructor
 
@@ -42,6 +44,7 @@ namespace TeamDev.Redis
       SortedSet = new LanguageItemCollection<LanguageSortedSet>() { Provider = this };
       Hash = new LanguageItemCollection<LanguageHash>() { Provider = this };
       Key = new LanguageKey();
+      Transaction = new LanguageTransactions() { _provider = this };
       ((ILanguageItem)Key).Configure(string.Empty, this);
     }
 
@@ -90,6 +93,7 @@ namespace TeamDev.Redis
       var newsocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
       newsocket.NoDelay = true;
       newsocket.SendTimeout = Configuration.SendTimeout;
+      newsocket.ReceiveTimeout = Configuration.ReceiveTimeout;
 
       newsocket.Connect(Configuration.Host, Configuration.Port);
       if (!newsocket.Connected)
@@ -176,7 +180,7 @@ namespace TeamDev.Redis
 
     #region communication methods
 
-    public bool SendCommand(RedisCommand command, params string[] args)
+    public int SendCommand(RedisCommand command, params string[] args)
     {
       this.Connect();
 
@@ -206,13 +210,14 @@ namespace TeamDev.Redis
         // timeout;
         GetSocket().Close();
         RemoveSocket();
-
-        return false;
+        return 0;
       }
-      return true;
+      if (Configuration.LogUnbalancedCommands)
+        return _tracer.TraceCommand(command);
+      return 0;
     }
 
-    public bool SendCommand(RedisCommand command, byte[] datas, params string[] args)
+    public int SendCommand(RedisCommand command, byte[] datas, params string[] args)
     {
       this.Connect();
 
@@ -257,13 +262,14 @@ namespace TeamDev.Redis
         // timeout;
         socket.Close();
         RemoveSocket();
-
-        return false;
+        return 0;
       }
-      return true;
+      if (Configuration.LogUnbalancedCommands)
+        return _tracer.TraceCommand(command);
+      return 0;
     }
 
-    public bool SendCommand(RedisCommand command, IDictionary<string, byte[]> datas, params string[] args)
+    public int SendCommand(RedisCommand command, IDictionary<string, byte[]> datas, params string[] args)
     {
       this.Connect();
 
@@ -315,13 +321,14 @@ namespace TeamDev.Redis
         // timeout;
         socket.Close();
         RemoveSocket();
-
-        return false;
+        return 0;
       }
-      return true;
+      if (Configuration.LogUnbalancedCommands)
+        return _tracer.TraceCommand(command);
+      return 0;
     }
 
-    public bool SendCommand(RedisCommand command, IDictionary<string, string> datas, params string[] args)
+    public int SendCommand(RedisCommand command, IDictionary<string, string> datas, params string[] args)
     {
       var result = new Dictionary<string, byte[]>();
 
@@ -331,8 +338,11 @@ namespace TeamDev.Redis
       return SendCommand(command, result, args);
     }
 
-    public void WaitComplete()
+    public void WaitComplete(int commandid = 0)
     {
+      if (commandid != 0 && Configuration.LogUnbalancedCommands)
+        _tracer.CheckBalancing(commandid);
+
       int c = GetBStream().ReadByte();
       if (c == -1)
         throw new Exception("No more data");
@@ -343,8 +353,11 @@ namespace TeamDev.Redis
         throw new Exception(s.StartsWith("ERR") ? s.Substring(4) : s);
     }
 
-    public int ReadInt()
+    public int ReadInt(int commandid = 0)
     {
+      if (commandid != 0 && Configuration.LogUnbalancedCommands)
+        _tracer.CheckBalancing(commandid);
+
       var s = ReadLine();
       var c = s[0];
       if (s[0] == ':')
@@ -360,8 +373,11 @@ namespace TeamDev.Redis
       throw new Exception("Unexpected response ");
     }
 
-    public byte[] ReadData()
+    public byte[] ReadData(int commandid = 0)
     {
+      if (commandid != 0 && Configuration.LogUnbalancedCommands)
+        _tracer.CheckBalancing(commandid);
+
       string r = ReadLine();
       Log("R: {0}", r);
       if (r.Length == 0)
@@ -416,8 +432,11 @@ namespace TeamDev.Redis
       throw new Exception("Unexpected reply: " + r);
     }
 
-    public byte[][] ReadMulti()
+    public byte[][] ReadMulti(int commandid = 0)
     {
+      if (commandid != 0 && Configuration.LogUnbalancedCommands)
+        _tracer.CheckBalancing(commandid);
+
       string r = ReadLine();
       Log("R: {0}", r);
       if (r.Length == 0)
@@ -441,8 +460,11 @@ namespace TeamDev.Redis
       return result.ToArray();
     }
 
-    public string[] ReadMultiString()
+    public string[] ReadMultiString(int commandid = 0)
     {
+      if (commandid != 0 && Configuration.LogUnbalancedCommands)
+        _tracer.CheckBalancing(commandid);
+
       string r = ReadLine();
       Log("R: {0}", r);
       if (r.Length == 0)
@@ -466,13 +488,19 @@ namespace TeamDev.Redis
       return result.ToArray();
     }
 
-    public string ReadString()
+    public string ReadString(int commandid = 0)
     {
+      if (commandid != 0 && Configuration.LogUnbalancedCommands)
+        _tracer.CheckBalancing(commandid);
+
       return Encoding.UTF8.GetString(ReadData());
     }
 
-    private string ReadLine()
+    private string ReadLine(int commandid = 0)
     {
+      if (commandid != 0 && Configuration.LogUnbalancedCommands)
+        _tracer.CheckBalancing(commandid);
+
       var sb = new StringBuilder();
       int c;
       var bstream = GetBStream();

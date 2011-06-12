@@ -15,12 +15,17 @@ namespace TeamDev.Redis.LanguageItems
 
     public string DataBase { get; set; }
     public int SendTimeout { get; set; }
+    public int ReceiveTimeout { get; set; }
+
+    public bool LogUnbalancedCommands { get; set; }
 
     public Configuration()
     {
       Host = "localhost";
       Port = 6379;
       SendTimeout = -1;
+
+      LogUnbalancedCommands = false;
     }
   }
 }

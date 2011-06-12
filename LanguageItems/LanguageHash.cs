@@ -13,42 +13,36 @@ namespace TeamDev.Redis.LanguageItems
 
     public void Clear()
     {
-      _provider.SendCommand(RedisCommand.DEL, _name);
-      _provider.WaitComplete();
+      _provider.WaitComplete(_provider.SendCommand(RedisCommand.DEL, _name));
     }
 
     public string this[string field]
     {
       get
-      {
-        _provider.SendCommand(RedisCommand.HGET, _name, field);
-        return _provider.ReadString();
+      {        
+        return _provider.ReadString(_provider.SendCommand(RedisCommand.HGET, _name, field));
       }
       set
-      {
-        _provider.SendCommand(RedisCommand.HSET, _name, field, value);
-        _provider.WaitComplete();
+      {        
+        _provider.WaitComplete(_provider.SendCommand(RedisCommand.HSET, _name, field, value));
       }
     }
 
     public string Get(string field)
-    {
-      _provider.SendCommand(RedisCommand.HGET, _name, field);
-      return _provider.ReadString();
+    {      
+      return _provider.ReadString(_provider.SendCommand(RedisCommand.HGET, _name, field));
     }
 
     public bool Set(string field, string value)
-    {
-      _provider.SendCommand(RedisCommand.HSET, _name, field, value);
-      return _provider.ReadInt() == 1;
+    {      
+      return _provider.ReadInt(_provider.SendCommand(RedisCommand.HSET, _name, field, value)) == 1;
     }
 
     public KeyValuePair<string, string>[] Items
     {
       get
-      {
-        _provider.SendCommand(RedisCommand.HGETALL, _name);
-        var result = _provider.ReadMultiString();
+      {        
+        var result = _provider.ReadMultiString(_provider.SendCommand(RedisCommand.HGETALL, _name));
 
         var values = new List<KeyValuePair<string, string>>();
         if (result != null)
@@ -66,37 +60,32 @@ namespace TeamDev.Redis.LanguageItems
     public string[] Keys
     {
       get
-      {
-        _provider.SendCommand(RedisCommand.HKEYS, _name);
-        return _provider.ReadMultiString();
+      {        
+        return _provider.ReadMultiString(_provider.SendCommand(RedisCommand.HKEYS, _name));
       }
     }
 
     public string[] Values
     {
       get
-      {
-        _provider.SendCommand(RedisCommand.HVALS, _name);
-        return _provider.ReadMultiString();
+      {        
+        return _provider.ReadMultiString(_provider.SendCommand(RedisCommand.HVALS, _name));
       }
     }
 
     public bool ContainsKey(string key)
-    {
-      _provider.SendCommand(RedisCommand.HEXISTS, _name, key);
-      return _provider.ReadInt() == 1;
+    {      
+      return _provider.ReadInt(_provider.SendCommand(RedisCommand.HEXISTS, _name, key)) == 1;
     }
 
     public bool Delete(string field)
-    {
-      _provider.SendCommand(RedisCommand.HDEL, _name, field);
-      return _provider.ReadInt() == 1;
+    {      
+      return _provider.ReadInt(_provider.SendCommand(RedisCommand.HDEL, _name, field)) == 1;
     }
 
     public void Set(IDictionary<string, string> datas)
-    {
-      _provider.SendCommand(RedisCommand.HMSET, datas, _name);
-      _provider.WaitComplete();
+    {      
+      _provider.WaitComplete(_provider.SendCommand(RedisCommand.HMSET, datas, _name));
     }
 
     public string[] Get(params string[] keys)
@@ -104,17 +93,15 @@ namespace TeamDev.Redis.LanguageItems
       List<string> args = new List<string>();
       args.Add(_name);
       args.AddRange(keys);
-
-      _provider.SendCommand(RedisCommand.HMGET, args.ToArray());
-      return _provider.ReadMultiString();
+      
+      return _provider.ReadMultiString(_provider.SendCommand(RedisCommand.HMGET, args.ToArray()));
     }
 
     public int Lenght
     {
       get
-      {
-        _provider.SendCommand(RedisCommand.HLEN, _name);
-        return _provider.ReadInt();
+      {        
+        return _provider.ReadInt(_provider.SendCommand(RedisCommand.HLEN, _name));
       }
     }
 

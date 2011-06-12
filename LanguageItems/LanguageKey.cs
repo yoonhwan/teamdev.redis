@@ -14,31 +14,27 @@ namespace TeamDev.Redis.LanguageItems
     internal RedisDataAccessProvider _provider;
 
     public bool Remove(params string[] keys)
-    {
-      _provider.SendCommand(RedisCommand.DEL, keys);
-      return _provider.ReadInt() == 1;
+    {      
+      return _provider.ReadInt(_provider.SendCommand(RedisCommand.DEL, keys)) == 1;
     }
 
     public bool Exists(string key)
-    {
-      _provider.SendCommand(RedisCommand.EXISTS, key);
-      return _provider.ReadInt() == 1;
+    {      
+      return _provider.ReadInt(_provider.SendCommand(RedisCommand.EXISTS, key)) == 1;
     }
 
     [Description("Return all keys matching the pattern")]
     public string[] this[string pattern]
     {
       get
-      {
-        _provider.SendCommand(RedisCommand.KEYS, pattern);
-        return _provider.ReadMultiString();
+      {        
+        return _provider.ReadMultiString(_provider.SendCommand(RedisCommand.KEYS, pattern));
       }
     }
 
     public string Type(string key)
-    {
-      _provider.SendCommand(RedisCommand.TYPE, key);
-      return _provider.ReadString();
+    {      
+      return _provider.ReadString(_provider.SendCommand(RedisCommand.TYPE, key));
     }
 
     void ILanguageItem.Configure(string name, RedisDataAccessProvider provider)

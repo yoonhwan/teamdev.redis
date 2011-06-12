@@ -14,15 +14,15 @@ namespace TeamDev.Redis.LanguageItems
 
     [Obsolete("Please use the overload with double typed score parameter")]
     public bool Add(string score, string member)
-    {
-      _provider.SendCommand(RedisCommand.ZADD, _name, score, member);
-      return _provider.ReadInt() == 1;
+    {      
+      return _provider.ReadInt(_provider.SendCommand(RedisCommand.ZADD, _name, score, member)) == 1;
     }
 
     public bool Add(double score, string member)
     {
-      _provider.SendCommand(RedisCommand.ZADD, _name, score.ToString(System.Globalization.CultureInfo.InvariantCulture), member);
-      return _provider.ReadInt() == 1;
+      
+      return _provider.ReadInt(
+             _provider.SendCommand(RedisCommand.ZADD, _name, score.ToString(System.Globalization.CultureInfo.InvariantCulture), member)) == 1;
     }
 
 
@@ -30,41 +30,35 @@ namespace TeamDev.Redis.LanguageItems
     public int Cardinality
     {
       get
-      {
-        _provider.SendCommand(RedisCommand.ZCARD, _name);
-        return _provider.ReadInt();
+      {        
+        return _provider.ReadInt(_provider.SendCommand(RedisCommand.ZCARD, _name));
       }
     }
 
     [Description("Returns the number of elements in the sorted set at key with a score between min and max")]
     public int Count(string min, string max)
-    {
-      _provider.SendCommand(RedisCommand.ZCOUNT, _name, min, max);
-      return _provider.ReadInt();
+    {      
+      return _provider.ReadInt(_provider.SendCommand(RedisCommand.ZCOUNT, _name, min, max));
     }
 
     public string[] IncrementBy(string member, int incrementvalue)
-    {
-      _provider.SendCommand(RedisCommand.ZINCRBY, _name, incrementvalue.ToString(), member);
-      return _provider.ReadMultiString();
+    {      
+      return _provider.ReadMultiString(_provider.SendCommand(RedisCommand.ZINCRBY, _name, incrementvalue.ToString(), member));
     }
 
     public string[] Range(string min, string max)
-    {
-      _provider.SendCommand(RedisCommand.ZRANGE, _name, min, max);
-      return _provider.ReadMultiString();
+    {      
+      return _provider.ReadMultiString(_provider.SendCommand(RedisCommand.ZRANGE, _name, min, max));
     }
 
     public int Rank(string member)
-    {
-      _provider.SendCommand(RedisCommand.ZRANK, _name, member);
-      return _provider.ReadInt();
+    {      
+      return _provider.ReadInt(_provider.SendCommand(RedisCommand.ZRANK, _name, member));
     }
 
     public void Clear()
-    {
-      _provider.SendCommand(RedisCommand.DEL, _name);
-      _provider.WaitComplete();
+    {      
+      _provider.WaitComplete(_provider.SendCommand(RedisCommand.DEL, _name));
     }
 
     void ILanguageItem.Configure(string name, RedisDataAccessProvider provider)
