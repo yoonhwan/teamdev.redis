@@ -137,7 +137,7 @@ namespace TeamDev.Redis.Test
         _values.Add("v1", "testvalue1");
         _values.Add("v2", "testvalue2");
         _values.Add("v3", "testvalue3");
-        _values.Add("v4", "testvalue4");
+        _values.Add("v4", "<372189371,389217838921,3218372189>");
 
         _redis.Hash["TEST"].Set(_values);
 

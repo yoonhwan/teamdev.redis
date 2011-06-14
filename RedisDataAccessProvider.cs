@@ -125,7 +125,7 @@ namespace TeamDev.Redis
       else
         _bstreams.Add(tid, new NetworkStream(newsocket));
       //_bstreams.Add(tid, new BufferedStream(new NetworkStream(newsocket), 16 * 1024));
-      
+
       if (Configuration.ReceiveTimeout > 0)
         _bstreams[tid].ReadTimeout = Configuration.ReceiveTimeout;
 
@@ -532,6 +532,10 @@ namespace TeamDev.Redis
       var sb = new StringBuilder();
       int c;
       var bstream = GetBStream();
+
+      while (!bstream.DataAvailable)
+        Thread.Sleep(0);
+
       while ((c = bstream.ReadByte()) != -1)
       {
         if (c == '\r')
