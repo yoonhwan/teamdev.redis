@@ -21,7 +21,8 @@ namespace TeamDev.Redis
 
     private volatile ReaderWriterLock _socketslock = new ReaderWriterLock();
     private volatile Dictionary<int, Socket> _sockets = new Dictionary<int, Socket>();
-    private volatile Dictionary<int, BufferedStream> _bstreams = new Dictionary<int, BufferedStream>();
+    //private volatile Dictionary<int, BufferedStream> _bstreams = new Dictionary<int, BufferedStream>();
+    private volatile Dictionary<int, NetworkStream> _bstreams = new Dictionary<int, NetworkStream>();
     private volatile byte[] _end_data = new byte[] { (byte)'\r', (byte)'\n' };
     private volatile CommandTracing _tracer = new CommandTracing();
 
@@ -119,9 +120,15 @@ namespace TeamDev.Redis
       _socketslock.UpgradeToWriterLock(1000);
       _sockets.Add(tid, newsocket);
       if (_bstreams.ContainsKey(tid))
-        _bstreams[tid] = new BufferedStream(new NetworkStream(newsocket), 16 * 1024);
+        _bstreams[tid] = new NetworkStream(newsocket);
+      //_bstreams[tid] = new BufferedStream(new NetworkStream(newsocket), 16 * 1024);
       else
-        _bstreams.Add(tid, new BufferedStream(new NetworkStream(newsocket), 16 * 1024));
+        _bstreams.Add(tid, new NetworkStream(newsocket));
+      //_bstreams.Add(tid, new BufferedStream(new NetworkStream(newsocket), 16 * 1024));
+      
+      if (Configuration.ReceiveTimeout > 0)
+        _bstreams[tid].ReadTimeout = Configuration.ReceiveTimeout;
+
       _socketslock.ReleaseLock();
 
       if (Configuration.Password != null)
@@ -155,7 +162,8 @@ namespace TeamDev.Redis
       }
     }
 
-    private BufferedStream GetBStream()
+    //private BufferedStream GetBStream()
+    private NetworkStream GetBStream()
     {
       var tid = Thread.CurrentThread.ManagedThreadId;
       try
@@ -374,11 +382,8 @@ namespace TeamDev.Redis
 
       var s = ReadLine();
       if (string.IsNullOrEmpty(s))
-        s = ReadLine();
-
-      if (string.IsNullOrEmpty(s))
       {
-        SendExceptionLog();
+        //SendExceptionLog();
         throw new InvalidDataException("Unexpected value reading data from TCP/IP channel ");
       }
 
