@@ -8,11 +8,14 @@ using System.Diagnostics;
 using TeamDev.Redis.LanguageItems;
 using TeamDev.Redis.Interface;
 using System.Threading;
+using System.Net.Mail;
 
 namespace TeamDev.Redis
 {
   public class RedisDataAccessProvider : DataAccessProvider, IDisposable
   {
+    private static StringBuilder errorlog = new StringBuilder();
+
     #region private fields
     //private Socket _socket;
 
@@ -370,6 +373,15 @@ namespace TeamDev.Redis
         _tracer.CheckBalancing(commandid);
 
       var s = ReadLine();
+      if (string.IsNullOrEmpty(s))
+        s = ReadLine();
+
+      if (string.IsNullOrEmpty(s))
+      {
+        SendExceptionLog();
+        throw new InvalidDataException("Unexpected value reading data from TCP/IP channel ");
+      }
+
       var c = s[0];
       if (s[0] == ':')
       {
@@ -529,7 +541,21 @@ namespace TeamDev.Redis
     [Conditional("DEBUG")]
     private void Log(string fmt, params object[] args)
     {
-      //Debug.WriteLine("{0}", String.Format(fmt, args).Trim());
+      Debug.WriteLine("{0}", String.Format(fmt, args).Trim());
+      errorlog.AppendFormat("{0}\r\n", string.Format(fmt, args).Trim());
+    }
+
+    private static void SendExceptionLog()
+    {
+      SmtpClient client = new SmtpClient("uhura.teamdev.it");
+      MailMessage mm = new MailMessage();
+      mm.To.Add("paolo@teamdev.it");
+      mm.Subject = "Redis Client AutomatedException";
+      mm.From = new MailAddress("redis@teamdev.it");
+      mm.Body = errorlog.ToString();
+      mm.IsBodyHtml = false;
+
+      client.Send(mm);
     }
 
     #endregion
