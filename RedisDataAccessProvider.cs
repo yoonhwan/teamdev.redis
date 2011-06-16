@@ -21,8 +21,8 @@ namespace TeamDev.Redis
 
     private volatile ReaderWriterLock _socketslock = new ReaderWriterLock();
     private volatile Dictionary<int, Socket> _sockets = new Dictionary<int, Socket>();
-    private volatile Dictionary<int, BufferedStream> _bstreams = new Dictionary<int, BufferedStream>();
-    //private volatile Dictionary<int, NetworkStream> _bstreams = new Dictionary<int, NetworkStream>();
+    //private volatile Dictionary<int, BufferedStream> _bstreams = new Dictionary<int, BufferedStream>();
+    private volatile Dictionary<int, NetworkStream> _bstreams = new Dictionary<int, NetworkStream>();
     private volatile byte[] _end_data = new byte[] { (byte)'\r', (byte)'\n' };
     private volatile CommandTracing _tracer = new CommandTracing();
 
@@ -131,11 +131,11 @@ namespace TeamDev.Redis
         _sockets.Add(tid, newsocket);
 
       if (_bstreams.ContainsKey(tid))
-        //_bstreams[tid] = new NetworkStream(newsocket);
-        _bstreams[tid] = new BufferedStream(new NetworkStream(newsocket), 16 * 1024);
+        _bstreams[tid] = new NetworkStream(newsocket);
+      //_bstreams[tid] = new BufferedStream(new NetworkStream(newsocket), 16 * 1024);
       else
-        //_bstreams.Add(tid, new NetworkStream(newsocket));
-        _bstreams.Add(tid, new BufferedStream(new NetworkStream(newsocket), 16 * 1024));
+        _bstreams.Add(tid, new NetworkStream(newsocket));
+      //_bstreams.Add(tid, new BufferedStream(new NetworkStream(newsocket), 16 * 1024));
 
       if (Configuration.ReceiveTimeout > 0)
         _bstreams[tid].ReadTimeout = Configuration.ReceiveTimeout;
@@ -173,8 +173,8 @@ namespace TeamDev.Redis
       }
     }
 
-    private BufferedStream GetBStream()
-    //private NetworkStream GetBStream()
+    //private BufferedStream GetBStream()
+    private NetworkStream GetBStream()
     {
       var tid = Thread.CurrentThread.ManagedThreadId;
       try
@@ -394,7 +394,7 @@ namespace TeamDev.Redis
       var s = ReadLine();
       if (string.IsNullOrEmpty(s))
       {
-        //SendExceptionLog();
+        SendExceptionLog();
         throw new InvalidDataException("Unexpected value reading data from TCP/IP channel ");
       }
 
@@ -544,8 +544,8 @@ namespace TeamDev.Redis
       int c;
       var bstream = GetBStream();
 
-      //while (!bstream.DataAvailable)
-      //  Thread.Sleep(0);
+      while (!bstream.DataAvailable)
+        Thread.Sleep(0);
 
       while ((c = bstream.ReadByte()) != -1)
       {
@@ -562,15 +562,16 @@ namespace TeamDev.Redis
     private void Log(string fmt, params object[] args)
     {
       Debug.WriteLine("{0}", String.Format(fmt, args).Trim());
-      errorlog.AppendFormat("{0}\r\n", string.Format(fmt, args).Trim());
+      errorlog.AppendFormat("{1} {0}\r\n", string.Format(fmt, args).Trim(), DateTime.Now.ToString("hh:mm:ss"));
     }
 
+    [Conditional("DEBUG")]
     private static void SendExceptionLog()
     {
       SmtpClient client = new SmtpClient("uhura.teamdev.it");
       MailMessage mm = new MailMessage();
       mm.To.Add("paolo@teamdev.it");
-      mm.Subject = "Redis Client AutomatedException";
+      mm.Subject = "Redis' Client AutomatedException";
       mm.From = new MailAddress("redis@teamdev.it");
       mm.Body = errorlog.ToString();
       mm.IsBodyHtml = false;
