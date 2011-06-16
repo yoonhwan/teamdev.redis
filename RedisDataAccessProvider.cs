@@ -21,8 +21,8 @@ namespace TeamDev.Redis
 
     private volatile ReaderWriterLock _socketslock = new ReaderWriterLock();
     private volatile Dictionary<int, Socket> _sockets = new Dictionary<int, Socket>();
-    //private volatile Dictionary<int, BufferedStream> _bstreams = new Dictionary<int, BufferedStream>();
-    private volatile Dictionary<int, NetworkStream> _bstreams = new Dictionary<int, NetworkStream>();
+    private volatile Dictionary<int, BufferedStream> _bstreams = new Dictionary<int, BufferedStream>();
+    //private volatile Dictionary<int, NetworkStream> _bstreams = new Dictionary<int, NetworkStream>();
     private volatile byte[] _end_data = new byte[] { (byte)'\r', (byte)'\n' };
     private volatile CommandTracing _tracer = new CommandTracing();
 
@@ -94,13 +94,19 @@ namespace TeamDev.Redis
     {
       var tid = Thread.CurrentThread.ManagedThreadId;
 
-      _socketslock.AcquireReaderLock(1000);
-      if (_sockets.ContainsKey(tid))
-      {
-        var result = _sockets[tid];
-        _socketslock.ReleaseReaderLock();
-        return result;
-      }
+      var result = GetSocket();
+      if (result != null)
+        if (result.Connected)
+          return result;
+
+      //_socketslock.AcquireReaderLock(1000);
+      //if (_sockets.ContainsKey(tid))
+      //{
+      //  var result = _sockets[tid];
+      //  _socketslock.ReleaseReaderLock();
+      //  if (result.Connected)
+      //    return result;
+      //}
 
       var newsocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
       newsocket.NoDelay = true;
@@ -118,13 +124,18 @@ namespace TeamDev.Redis
       }
 
       _socketslock.UpgradeToWriterLock(1000);
-      _sockets.Add(tid, newsocket);
-      if (_bstreams.ContainsKey(tid))
-        _bstreams[tid] = new NetworkStream(newsocket);
-      //_bstreams[tid] = new BufferedStream(new NetworkStream(newsocket), 16 * 1024);
+
+      if (_sockets.ContainsKey(tid))
+        _sockets[tid] = newsocket;
       else
-        _bstreams.Add(tid, new NetworkStream(newsocket));
-      //_bstreams.Add(tid, new BufferedStream(new NetworkStream(newsocket), 16 * 1024));
+        _sockets.Add(tid, newsocket);
+
+      if (_bstreams.ContainsKey(tid))
+        //_bstreams[tid] = new NetworkStream(newsocket);
+        _bstreams[tid] = new BufferedStream(new NetworkStream(newsocket), 16 * 1024);
+      else
+        //_bstreams.Add(tid, new NetworkStream(newsocket));
+        _bstreams.Add(tid, new BufferedStream(new NetworkStream(newsocket), 16 * 1024));
 
       if (Configuration.ReceiveTimeout > 0)
         _bstreams[tid].ReadTimeout = Configuration.ReceiveTimeout;
@@ -162,8 +173,8 @@ namespace TeamDev.Redis
       }
     }
 
-    //private BufferedStream GetBStream()
-    private NetworkStream GetBStream()
+    private BufferedStream GetBStream()
+    //private NetworkStream GetBStream()
     {
       var tid = Thread.CurrentThread.ManagedThreadId;
       try
@@ -204,7 +215,6 @@ namespace TeamDev.Redis
 
     public int SendCommand(RedisCommand command, params string[] args)
     {
-      this.Connect();
 
       // http://redis.io/topics/protocol
       // new redis communication protocol specifications
@@ -225,10 +235,11 @@ namespace TeamDev.Redis
       try
       {
         Log("S: " + String.Format(cmd, args));
-        GetSocket().Send(r);
+        this.Connect().Send(r);
       }
-      catch (SocketException)
+      catch (SocketException e)
       {
+        Log("Exception: " + e.Message);
         // timeout;
         GetSocket().Close();
         RemoveSocket();
@@ -241,8 +252,6 @@ namespace TeamDev.Redis
 
     public int SendCommand(RedisCommand command, byte[] datas, params string[] args)
     {
-      this.Connect();
-
       // http://redis.io/topics/protocol
       // new redis communication protocol specifications
 
@@ -263,7 +272,7 @@ namespace TeamDev.Redis
         }
 
       byte[] r = Encoding.UTF8.GetBytes(sb.ToString());
-      var socket = GetSocket();
+      var socket = this.Connect();
 
       try
       {
@@ -279,9 +288,10 @@ namespace TeamDev.Redis
         }
 
       }
-      catch (SocketException)
+      catch (SocketException e)
       {
         // timeout;
+        Log("Exception: " + e.Message);
         socket.Close();
         RemoveSocket();
         return 0;
@@ -293,7 +303,6 @@ namespace TeamDev.Redis
 
     public int SendCommand(RedisCommand command, IDictionary<string, byte[]> datas, params string[] args)
     {
-      this.Connect();
 
       // http://redis.io/topics/protocol
       // new redis communication protocol specifications
@@ -332,18 +341,20 @@ namespace TeamDev.Redis
         }
       }
 
-      var socket = GetSocket();
+      var socket = this.Connect();
       try
       {
         Log("S: " + String.Format(cmd, args));
         socket.Send(ms.ToArray());
       }
-      catch (SocketException)
+      catch (SocketException e)
       {
+        Log("Exception: " + e.Message);
         // timeout;
         socket.Close();
         RemoveSocket();
-        return 0;
+
+        throw;
       }
       if (Configuration.LogUnbalancedCommands)
         return _tracer.TraceCommand(command);
@@ -533,8 +544,8 @@ namespace TeamDev.Redis
       int c;
       var bstream = GetBStream();
 
-      while (!bstream.DataAvailable)
-        Thread.Sleep(0);
+      //while (!bstream.DataAvailable)
+      //  Thread.Sleep(0);
 
       while ((c = bstream.ReadByte()) != -1)
       {

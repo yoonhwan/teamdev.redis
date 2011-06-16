@@ -16,7 +16,7 @@ namespace TeamDev.Redis.Test
 
     public UsersTests()
     {
-      _redis.Configuration.Host = "192.168.1.81";
+      //_redis.Configuration.Host = "192.168.1.81";
 
     }
 
