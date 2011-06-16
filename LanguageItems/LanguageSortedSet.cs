@@ -13,11 +13,13 @@ namespace TeamDev.Redis.LanguageItems
     internal RedisDataAccessProvider _provider;
 
     [Obsolete("Please use the overload with double typed score parameter")]
+    [Description(CommandDescriptions.ZADD)]
     public bool Add(string score, string member)
     {      
       return _provider.ReadInt(_provider.SendCommand(RedisCommand.ZADD, _name, score, member)) == 1;
     }
 
+    [Description(CommandDescriptions.ZADD)]
     public bool Add(double score, string member)
     {
       
@@ -26,7 +28,7 @@ namespace TeamDev.Redis.LanguageItems
     }
 
 
-    [Description("Returns the sorted set cardinality (number of elements) of the sorted set")]
+    [Description(CommandDescriptions.ZCARD)]
     public int Cardinality
     {
       get
@@ -35,27 +37,31 @@ namespace TeamDev.Redis.LanguageItems
       }
     }
 
-    [Description("Returns the number of elements in the sorted set at key with a score between min and max")]
+    [Description(CommandDescriptions.ZCOUNT)]
     public int Count(string min, string max)
     {      
       return _provider.ReadInt(_provider.SendCommand(RedisCommand.ZCOUNT, _name, min, max));
     }
 
+    [Description(CommandDescriptions.ZINCRBY)]
     public string[] IncrementBy(string member, int incrementvalue)
     {      
       return _provider.ReadMultiString(_provider.SendCommand(RedisCommand.ZINCRBY, _name, incrementvalue.ToString(), member));
     }
 
+    [Description(CommandDescriptions.ZRANGE)]
     public string[] Range(string min, string max)
     {      
       return _provider.ReadMultiString(_provider.SendCommand(RedisCommand.ZRANGE, _name, min, max));
     }
 
+    [Description(CommandDescriptions.ZRANK)]
     public int Rank(string member)
     {      
       return _provider.ReadInt(_provider.SendCommand(RedisCommand.ZRANK, _name, member));
     }
 
+    [Description(CommandDescriptions.DEL)]
     public void Clear()
     {      
       _provider.WaitComplete(_provider.SendCommand(RedisCommand.DEL, _name));

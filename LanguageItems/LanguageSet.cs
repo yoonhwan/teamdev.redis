@@ -12,21 +12,25 @@ namespace TeamDev.Redis.LanguageItems
     internal string _name;
     internal RedisDataAccessProvider _provider;
 
+    [Description(CommandDescriptions.SADD)]
     public bool Add(string value)
     {      
       return _provider.ReadInt(_provider.SendCommand(RedisCommand.SADD, _name, value)) == 1;
     }
 
+    [Description(CommandDescriptions.DEL)]
     public void Clear()
     {      
       _provider.WaitComplete(_provider.SendCommand(RedisCommand.DEL, _name));
     }
 
+    [Description(CommandDescriptions.SISMEMBER)]
     public bool IsMember(string value)
     {      
       return _provider.ReadInt(_provider.SendCommand(RedisCommand.SISMEMBER, _name, value)) == 1;
     }
 
+    [Description(CommandDescriptions.SMEMBERS)]
     public string[] Members
     {
       get
@@ -35,12 +39,13 @@ namespace TeamDev.Redis.LanguageItems
       }
     }
 
+    [Description(CommandDescriptions.SREM)]
     public void Remove(string value)
     {      
       _provider.WaitComplete(_provider.SendCommand(RedisCommand.SREM, _name, value));
     }
 
-    [Description("SUNION -> Returns the members of the set resulting from the union of all the given sets")]
+    [Description(CommandDescriptions.SUNION)]
     public string[] Union(params string[] sets)
     {
       List<string> args = new List<string>();
@@ -50,7 +55,7 @@ namespace TeamDev.Redis.LanguageItems
       return _provider.ReadMultiString(_provider.SendCommand(RedisCommand.SUNION, args.ToArray()));
     }
 
-    [Description("SINTER -> Returns the members of the set resulting from the intersection of all the given sets")]
+    [Description(CommandDescriptions.SINTER)]
     public string[] Intersect(params string[] sets)
     {
       List<string> args = new List<string>();
@@ -60,13 +65,13 @@ namespace TeamDev.Redis.LanguageItems
       return _provider.ReadMultiString(_provider.SendCommand(RedisCommand.SINTER, args.ToArray()));
     }
 
-    [Description("SMOVE -> Move member from the set at source to the set at destination. This operation is atomic")]
+    [Description(CommandDescriptions.SMOVE)]
     public bool Move(string destination, string value)
     {      
       return _provider.ReadInt(_provider.SendCommand(RedisCommand.SMOVE, _name, destination, value)) == 1;
     }
 
-    [Description("SDIF -> Returns the members of the set resulting from the difference between the first set and all the successive sets")]
+    [Description(CommandDescriptions.SDIFF)]
     public string[] Subtract(params string[] sets)
     {
       List<string> args = new List<string>();
@@ -76,6 +81,7 @@ namespace TeamDev.Redis.LanguageItems
       return _provider.ReadMultiString(_provider.SendCommand(RedisCommand.SDIFF, args.ToArray()));
     }
 
+    [Description(CommandDescriptions.SCARD)]
     public int Count
     {
       get
@@ -84,13 +90,13 @@ namespace TeamDev.Redis.LanguageItems
       }
     }
 
-    [Description("SPOP -> Removes and returns a random element from the set value stored at key")]
+    [Description(CommandDescriptions.SPOP)]
     public string Pop()
     {      
       return _provider.ReadString(_provider.SendCommand(RedisCommand.SPOP, _name));
     }
 
-    [Description("SRANDMEMBER -> Return a random element from the set value stored at key without removing it from set")]
+    [Description(CommandDescriptions.SRANDMEMBER)]
     public string Random
     {
       get

@@ -45,6 +45,7 @@
     <Compile Include="Attributes\DocumentStoreIndexAttribute.cs" />
     <Compile Include="Attributes\DocumentStoreKeyAttribute.cs" />
     <Compile Include="Attributes\DocumentValueAttribute.cs" />
+    <Compile Include="CommandDescriptions.cs" />
     <Compile Include="CommandTracing.cs" />
     <Compile Include="DataAccessProvider.cs" />
     <Compile Include="DocumentStore.cs" />

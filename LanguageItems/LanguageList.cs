@@ -12,25 +12,25 @@ namespace TeamDev.Redis.LanguageItems
     internal string _name = string.Empty;
     internal RedisDataAccessProvider _provider = null;
 
-    [Description("Append a value to the list")]
+    [Description(CommandDescriptions.RPUSH)]
     public void Append(string value)
     {
       _provider.ReadInt(_provider.SendCommand(RedisCommand.RPUSH, _name, value));
     }
 
-    [Description("Prepend a value to the list")]
+    [Description(CommandDescriptions.LPUSH)]
     public void Prepend(string value)
     {
       _provider.ReadInt(_provider.SendCommand(RedisCommand.LPUSH, _name, value));
     }
 
-    [Description("Remove all elements with the given value from the list. ")]
+    [Description(CommandDescriptions.LREM)]
     public void Remove(string value)
     {
       _provider.ReadInt(_provider.SendCommand(RedisCommand.LREM, _name, "0", value));
     }
 
-    [Description("Clear the list")]
+    [Description(CommandDescriptions.DEL)]
     public void Clear()
     {
       _provider.WaitComplete(_provider.SendCommand(RedisCommand.DEL, _name));
@@ -45,33 +45,34 @@ namespace TeamDev.Redis.LanguageItems
     /// </summary>
     /// <param name="index"></param>
     /// <returns></returns>
-    [Description("Get or set an element from a list by its index")]
+    [Description(CommandDescriptions.LINDEX + " - " + CommandDescriptions.LSET)]
     public string this[int index]
     {
+      [Description(CommandDescriptions.LINDEX)]
       get
       {
         return Encoding.UTF8.GetString(_provider.ReadData(_provider.SendCommand(RedisCommand.LINDEX, _name, index.ToString())));
       }
+      [Description(CommandDescriptions.LSET)]
       set
       {
         _provider.WaitComplete(_provider.SendCommand(RedisCommand.LSET, _name, index.ToString(), value));
       }
     }
 
+    [Description(CommandDescriptions.LPOP)]
     public string LeftPop()
     {
       return _provider.ReadString(_provider.SendCommand(RedisCommand.LPOP, _name));
     }
 
+    [Description(CommandDescriptions.RPOP)]
     public string RightPop()
     {
       return _provider.ReadString(_provider.SendCommand(RedisCommand.RPOP, _name));
     }
 
-    /// <summary>
-    /// LLEN key
-    /// Get the length of a list
-    /// </summary>
+    [Description(CommandDescriptions.LLEN)]
     public int Count
     {
       get
@@ -80,11 +81,13 @@ namespace TeamDev.Redis.LanguageItems
       }
     }
 
+    [Description(CommandDescriptions.LRANGE)]
     public string[] Range(int startindex, int endindex)
     {
       return _provider.ReadMultiString(_provider.SendCommand(RedisCommand.LRANGE, _name, startindex.ToString(), endindex.ToString()));
     }
 
+    [Description(CommandDescriptions.LRANGE)]
     public string[] Values
     {
       get
