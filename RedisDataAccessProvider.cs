@@ -109,7 +109,7 @@ namespace TeamDev.Redis
       //}
 
       var newsocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-      newsocket.NoDelay = true;
+      //newsocket.NoDelay = true;
       if (Configuration.SendTimeout > 0)
         newsocket.SendTimeout = Configuration.SendTimeout;
 
