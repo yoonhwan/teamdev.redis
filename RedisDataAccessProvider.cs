@@ -25,6 +25,8 @@ namespace TeamDev.Redis
     private volatile Dictionary<int, NetworkStream> _bstreams = new Dictionary<int, NetworkStream>();
     private volatile byte[] _end_data = new byte[] { (byte)'\r', (byte)'\n' };
     private volatile CommandTracing _tracer = new CommandTracing();
+    private DateTime _lastcommandcompleted = DateTime.MinValue;
+    private volatile bool _checkingconnectionstatus = false;
 
     #endregion
 
@@ -37,6 +39,37 @@ namespace TeamDev.Redis
     public LanguageTransactions Transaction { get; private set; }
     public LanguageMessaging Messaging { get; private set; }
 
+    public int RenewConnectionPeriod { get; set; }
+
+    public void CheckConnectionStatus()
+    {
+      var socket = GetSocket();
+
+      if (socket != null)
+      {
+        socket.Close();
+        RemoveSocket();
+      }
+
+      //SendCommand(RedisCommand.PING);
+
+      //try
+      //{
+      //  var nstream = GetBStream();
+
+      //  if (nstream.ReadByte() == -1)
+      //  {
+      //    GetSocket().Close();
+      //    RemoveSocket();        
+      //  }
+      //}
+      //catch (Exception ex)
+      //{
+      //  GetSocket().Close();
+      //  RemoveSocket();
+      //}
+    }
+
     #region constructor
 
     public RedisDataAccessProvider()
@@ -45,6 +78,7 @@ namespace TeamDev.Redis
       base.Configuration.Host = "localhost";
       base.Configuration.Port = 6379;
       base.Configuration.ReceiveTimeout = -1;
+      RenewConnectionPeriod = 20;
 
       List = new LanguageItemCollection<LanguageList>() { Provider = this };
       Set = new LanguageItemCollection<LanguageSet>() { Provider = this };
@@ -93,6 +127,15 @@ namespace TeamDev.Redis
     public override Socket Connect()
     {
       var tid = Thread.CurrentThread.ManagedThreadId;
+
+      if (!_checkingconnectionstatus)
+        if (RenewConnectionPeriod > 0)
+          if (DateTime.Now.Subtract(_lastcommandcompleted).TotalSeconds > RenewConnectionPeriod)
+          {
+            _checkingconnectionstatus = true;
+            CheckConnectionStatus();
+            _checkingconnectionstatus = false;
+          }
 
       var result = GetSocket();
       if (result != null)
@@ -197,7 +240,10 @@ namespace TeamDev.Redis
       if (_sockets.ContainsKey(tid))
       {
         _socketslock.UpgradeToWriterLock(1000);
+
+        _bstreams.Remove(tid);
         _sockets.Remove(tid);
+
       }
       _socketslock.ReleaseLock();
     }
@@ -392,10 +438,6 @@ namespace TeamDev.Redis
         _tracer.CheckBalancing(commandid);
 
       var s = ReadLine();
-      if (string.IsNullOrEmpty(s))
-      {
-        return 0;
-      }
 
       var c = s[0];
       if (s[0] == ':')
@@ -546,14 +588,17 @@ namespace TeamDev.Redis
       while (!bstream.DataAvailable)
         Thread.Sleep(0);
 
-      while ((c = bstream.ReadByte()) != -1)
-      {
-        if (c == '\r')
-          continue;
-        if (c == '\n')
-          break;
-        sb.Append((char)c);
-      }
+      if (bstream.DataAvailable)
+        while ((c = bstream.ReadByte()) != -1)
+        {
+          if (c == '\r')
+            continue;
+          if (c == '\n')
+            break;
+          sb.Append((char)c);
+        }
+
+      _lastcommandcompleted = DateTime.Now;
       return sb.ToString();
     }
 

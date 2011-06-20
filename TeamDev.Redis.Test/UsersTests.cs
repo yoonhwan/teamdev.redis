@@ -3,6 +3,7 @@ using System.Text;
 using System.Collections.Generic;
 using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using System.Threading;
 
 namespace TeamDev.Redis.Test
 {
@@ -16,7 +17,7 @@ namespace TeamDev.Redis.Test
 
     public UsersTests()
     {
-      //_redis.Configuration.Host = "192.168.1.81";
+      _redis.Configuration.Host = "192.168.1.81";
 
     }
 
@@ -175,6 +176,8 @@ namespace TeamDev.Redis.Test
 
       // Based on Log received from Farland game. 
 
+      Thread.Sleep(10 * 1000);
+
       var m = _redis.Set["users"].Members;
       var c = _redis.Set["characters"].Members;
 
@@ -204,10 +207,12 @@ namespace TeamDev.Redis.Test
       GetCharacterData(30);
 
       _redis.Set["characters"].Remove("30");
-      _redis.Hash["characters_30"].Clear();
+      _redis.Hash["characters_30"].Clear();      
 
       _redis.Set["users"].Remove("5");
       _redis.Hash["user_5"].Clear();
+
+      Thread.Sleep(60 * 1000);
 
       _redis.Key.Exists("user_5");
     }
