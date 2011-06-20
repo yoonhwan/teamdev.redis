@@ -3,6 +3,8 @@ using System.Text;
 using System.Collections.Generic;
 using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using System.Diagnostics;
+using System.Threading;
 
 namespace TeamDev.Redis.Test
 {
@@ -17,7 +19,7 @@ namespace TeamDev.Redis.Test
     public UsersTests()
     {
       //_redis.Configuration.Host = "192.168.1.81";
-
+      _redis.Configuration.Host = "95.110.227.122";
     }
 
     private TestContext testContextInstance;
@@ -124,14 +126,21 @@ namespace TeamDev.Redis.Test
       _redis.Configuration.LogUnbalancedCommands = true;
       _redis.WaitComplete(_redis.SendCommand(RedisCommand.FLUSHALL));
 
+      Random rnd = new Random();
+
       for (int x = 0; x < 10000; x++)
       {
-        _redis.Key.Exists("TEST");
-        _redis.Set["MySet"].Add("setvalue1");
-        _redis.Set["MySet"].Add("setvalue1");
-        _redis.Set["MySet"].Add("setvalue2");
-        _redis.Set["MySet"].Add("setvalue3");
-        _redis.Set["MySet"].Add("setvalue4");
+
+        string key = "MySet" + x.ToString();
+        string key2 = "TEST" + x.ToString();
+
+        _redis.Key.Exists(key2);
+
+        _redis.Set[key].Add("setvalue1");
+        _redis.Set[key].Add("setvalue1");
+        _redis.Set[key].Add("setvalue2");
+        _redis.Set[key].Add("setvalue3");
+        _redis.Set[key].Add("setvalue4");
 
         Dictionary<string, string> _values = new Dictionary<string, string>();
         _values.Add("v1", "testvalue1");
@@ -139,26 +148,34 @@ namespace TeamDev.Redis.Test
         _values.Add("v3", "testvalue3");
         _values.Add("v4", "<372189371,389217838921,3218372189>");
 
-        _redis.Hash["TEST"].Set(_values);
+        _redis.Hash[key2].Set(_values);
 
-        _redis.Hash["TEST"].Get("v1", "v2", "v3", "v4");
+        _redis.Hash[key2].Get("v1", "v2", "v3", "v4");
 
-        _redis.Key.Exists("TEST");
+        Thread.Sleep(rnd.Next(30 * 1000));
 
-        foreach (var v in _redis.Set["MySet"].Members)
+        _redis.Key.Exists(key2);
+
+        foreach (var v in _redis.Set[key].Members)
         {
-          _redis.Set["MySet"].Remove(v);
-          _redis.Set["MySet"].Remove(v);
-          _redis.Key.Remove("TEST");
+          _redis.Set[key].Remove(v);
+          _redis.Set[key].Remove(v);
+          _redis.Key.Remove(key2);
         }
 
-        _redis.Key.Exists("TEST");
-        _redis.Key.Exists("MySet");
+        Thread.Sleep(rnd.Next(30 * 1000));
+        _redis.Key.Exists(key2);
 
-        _redis.Set["MySet"].Clear();
-        _redis.Key.Remove("TEST");
+        Thread.Sleep(rnd.Next(30 * 1000));
+        _redis.Key.Exists(key);
 
-        _redis.Key.Exists("MySet");
+        _redis.Set[key].Clear();
+        _redis.Key.Remove(key2);
+
+        Thread.Sleep(rnd.Next(30 * 1000));
+        _redis.Key.Exists(key);
+
+        Debug.WriteLine(" Now at position : " + x.ToString());
       }
     }
   }

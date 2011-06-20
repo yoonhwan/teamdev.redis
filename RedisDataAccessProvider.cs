@@ -234,7 +234,7 @@ namespace TeamDev.Redis
       byte[] r = Encoding.UTF8.GetBytes(sb.ToString());
       try
       {
-        Log("S: " + String.Format(cmd, args));
+        Log("S: " + sb.ToString());
         this.Connect().Send(r);
       }
       catch (SocketException e)
@@ -276,7 +276,7 @@ namespace TeamDev.Redis
 
       try
       {
-        Log("S: " + String.Format(cmd, args));
+        Log("S: " + sb.ToString());
         // Send command and args. 
         socket.Send(r);
 
@@ -344,7 +344,7 @@ namespace TeamDev.Redis
       var socket = this.Connect();
       try
       {
-        Log("S: " + String.Format(cmd, args));
+        Log("S: " + sb.ToString());
         socket.Send(ms.ToArray());
       }
       catch (SocketException e)
@@ -392,6 +392,7 @@ namespace TeamDev.Redis
         _tracer.CheckBalancing(commandid);
 
       var s = ReadLine();
+      Log(string.Format("R: {0}", s));
       if (string.IsNullOrEmpty(s))
       {
         SendExceptionLog();
@@ -405,7 +406,7 @@ namespace TeamDev.Redis
         if (int.TryParse(s.Substring(1), out n))
           return n;
       }
-      Log((char)c + s);
+
       if (c == '-')
         throw new Exception(s.StartsWith("ERR") ? s.Substring(4) : s);
 
@@ -418,7 +419,7 @@ namespace TeamDev.Redis
         _tracer.CheckBalancing(commandid);
 
       string r = ReadLine();
-      Log("R: {0}", r);
+      Log(string.Format("R: {0}", r));
       if (r.Length == 0)
         throw new Exception("Zero length respose");
 
@@ -451,7 +452,7 @@ namespace TeamDev.Redis
           }
           if (bstream.ReadByte() != '\r' || bstream.ReadByte() != '\n')
             throw new Exception("Invalid termination");
-          Log("R: {0}, {1}", r, Encoding.UTF8.GetString(retbuf));
+          Log(string.Format("R: {0}, {1}", r, Encoding.UTF8.GetString(retbuf)));
 
           return retbuf;
         }
@@ -477,7 +478,7 @@ namespace TeamDev.Redis
         _tracer.CheckBalancing(commandid);
 
       string r = ReadLine();
-      Log("R: {0}", r);
+      Log(string.Format("R: {0}", r));
       if (r.Length == 0)
         throw new Exception("Zero length respose");
 
@@ -505,7 +506,7 @@ namespace TeamDev.Redis
         _tracer.CheckBalancing(commandid);
 
       string r = ReadLine();
-      Log("R: {0}", r);
+      Log(string.Format("R: {0}", r));
       if (r.Length == 0)
         throw new Exception("Zero length respose");
 
@@ -544,8 +545,8 @@ namespace TeamDev.Redis
       int c;
       var bstream = GetBStream();
 
-      while (!bstream.DataAvailable)
-        Thread.Sleep(0);
+      //while (!bstream.DataAvailable)
+      //  Thread.Sleep(10);
 
       while ((c = bstream.ReadByte()) != -1)
       {
@@ -559,10 +560,10 @@ namespace TeamDev.Redis
     }
 
     [Conditional("DEBUG")]
-    private void Log(string fmt, params object[] args)
+    private void Log(string fmt)
     {
-      Debug.WriteLine("{0}", String.Format(fmt, args).Trim());
-      errorlog.AppendFormat("{1} {0}\r\n", string.Format(fmt, args).Trim(), DateTime.Now.ToString("hh:mm:ss"));
+      Debug.WriteLine(fmt);
+      errorlog.AppendFormat("{1} {0}\r\n", fmt.Trim(), DateTime.Now.ToString("hh:mm:ss"));
     }
 
     [Conditional("DEBUG")]
