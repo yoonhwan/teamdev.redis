@@ -60,6 +60,12 @@ namespace TeamDev.Redis.Test
     //
     #endregion
 
+    [TestInitialize()]
+    public void MyTestInitialize()
+    {
+      _redis.WaitComplete(_redis.SendCommand(RedisCommand.FLUSHALL));
+    }
+
     [TestMethod]
     public void ExistsAfter_DEL_SREM_Bug_SIMULATION1()
     {
@@ -159,6 +165,151 @@ namespace TeamDev.Redis.Test
         _redis.Key.Remove("TEST");
 
         _redis.Key.Exists("MySet");
+      }
+    }
+
+    [TestMethod]
+    public void ExistsAfter_DEL_SREM_Bug_SIMULATION4()
+    {
+      _redis.Configuration.LogUnbalancedCommands = true;
+
+      // Based on Log received from Farland game. 
+
+      var m = _redis.Set["users"].Members;
+      var c = _redis.Set["characters"].Members;
+
+      // Character creation
+      dynamic response = _redis.Key.Exists("user_5");
+      _redis.Set["characters"].Add("30");
+      SetCharacter(30, 5);
+
+      _redis.Set["users"].Add("5");
+
+      Dictionary<string, string> usersdata = new Dictionary<string, string>();
+      usersdata.Add("username", "testuser");
+      usersdata.Add("userfullname", "testuserfullname");
+      _redis.Hash["user_5"].Set(usersdata);
+
+
+      // Update character position
+      UpdatePosition(30, 5);
+      UpdatePosition(30, 5);
+      UpdatePosition(30, 5);
+
+      _redis.Key.Exists("user_5");
+
+      UpdatePosition(30, 5);
+      UpdatePosition(30, 5);
+
+      GetCharacterData(30);
+
+      _redis.Set["characters"].Remove("30");
+      _redis.Hash["characters_30"].Clear();
+
+      _redis.Set["users"].Remove("5");
+      _redis.Hash["user_5"].Clear();
+
+      _redis.Key.Exists("user_5");
+    }
+
+    [TestMethod]
+    public void ExistsAfter_DEL_SREM_Bug_SIMULATION5()
+    {
+      for (int i = 0; i < 1000; i++)
+        ExistsAfter_DEL_SREM_Bug_SIMULATION4();
+    }
+
+    private void SetCharacter(int id, int userid)
+    {
+      Dictionary<string, string> dataKeyValue = new Dictionary<string, string>();
+      dataKeyValue.Add("character_id", id.ToString());
+      dataKeyValue.Add("login_id", userid.ToString());
+      dataKeyValue.Add("character_name", "test");
+      dataKeyValue.Add("race_id", "1");
+      dataKeyValue.Add("class_id", "2");
+      dataKeyValue.Add("faction_id", "3");
+      dataKeyValue.Add("character_level", "4");
+      dataKeyValue.Add("character_exp", "5");
+      dataKeyValue.Add("attribute_points", "6");
+      dataKeyValue.Add("might_dist", "7");
+      dataKeyValue.Add("constitution_dist", "8");
+      dataKeyValue.Add("dexterity_dist", "9");
+      dataKeyValue.Add("agility_dist", "10");
+      dataKeyValue.Add("intelligence_dist", "11");
+      dataKeyValue.Add("willpower_dist", "12");
+      dataKeyValue.Add("charisma_dist", "13");
+      dataKeyValue.Add("luck_dist", "14");
+      dataKeyValue.Add("might_max", "15");
+      dataKeyValue.Add("constitution_max", "16");
+      dataKeyValue.Add("dexterity_max", "17");
+      dataKeyValue.Add("agility_max", "18");
+      dataKeyValue.Add("intelligence_max", "19");
+      dataKeyValue.Add("willpower_max", "20");
+      dataKeyValue.Add("charisma_max", "21");
+      dataKeyValue.Add("luck_max", "22");
+      dataKeyValue.Add("health_max", "23");
+      dataKeyValue.Add("mana_max", "24");
+      dataKeyValue.Add("stamina_max", "25");
+      dataKeyValue.Add("health_current", "26");
+      dataKeyValue.Add("mana_current", "27");
+      dataKeyValue.Add("stamina_current", "28");
+      dataKeyValue.Add("last_position", "29");
+      dataKeyValue.Add("last_rotation", "30");
+      dataKeyValue.Add("last_zone", "31");
+      _redis.Hash["character_" + id.ToString()].Set(dataKeyValue);
+    }
+
+    public void GetCharacterData(int id)
+    {
+      string[] characterFields = { "character_id", 
+                                         "login_id", 
+                                         "character_name",
+                                         "race_id",
+                                         "class_id",
+                                         "faction_id",
+                                         "character_level",
+                                         "character_exp",
+                                         "attribute_points",
+                                         "might_dist",
+                                         "constitution_dist",
+                                         "dexterity_dist",
+                                         "agility_dist",
+                                         "intelligence_dist",
+                                         "willpower_dist",
+                                         "charisma_dist",
+                                         "luck_dist",
+                                         "might_max",
+                                         "constitution_max",
+                                         "dexterity_max",
+                                         "agility_max",
+                                         "intelligence_max",
+                                         "willpower_max",
+                                         "charisma_max",
+                                         "luck_max",
+                                         "health_max",
+                                         "mana_max",
+                                         "stamina_max",
+                                         "health_current",
+                                         "mana_current",
+                                         "stamina_current",
+                                         "last_position",
+                                         "last_rotation",
+                                         "last_zone"};
+      string[] data = _redis.Hash["character_" + id].Get(characterFields);
+    }
+
+    private void UpdatePosition(int id, int userid)
+    {
+      if (_redis.Key.Exists("user_" + userid))
+      {
+
+        Random rnd = new Random();
+
+        Dictionary<string, string> newcharacterdata = new Dictionary<string, string>();
+        newcharacterdata.Add("character_id", id.ToString());
+        newcharacterdata.Add("last_position", ((float)(rnd.NextDouble() * 360)).ToString(System.Globalization.CultureInfo.InvariantCulture));
+        newcharacterdata.Add("last_rotation", ((float)(rnd.NextDouble() * 360)).ToString(System.Globalization.CultureInfo.InvariantCulture));
+        _redis.Hash["character_" + id.ToString()].Set(newcharacterdata);
       }
     }
   }

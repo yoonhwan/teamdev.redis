@@ -394,8 +394,7 @@ namespace TeamDev.Redis
       var s = ReadLine();
       if (string.IsNullOrEmpty(s))
       {
-        SendExceptionLog();
-        throw new InvalidDataException("Unexpected value reading data from TCP/IP channel ");
+        return 0;
       }
 
       var c = s[0];
@@ -566,7 +565,7 @@ namespace TeamDev.Redis
     }
 
     [Conditional("DEBUG")]
-    private static void SendExceptionLog()
+    public static void SendRedisClientExceptionLogToAuthor()
     {
       SmtpClient client = new SmtpClient("uhura.teamdev.it");
       MailMessage mm = new MailMessage();
