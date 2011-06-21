@@ -12,9 +12,14 @@ using System.Net.Mail;
 
 namespace TeamDev.Redis
 {
+
+  public delegate void ChannelSubscribedHandler(string channelname);
+  public delegate void ChannelUnsubscribedHandler(string channelname);
+  public delegate void MessageReceivedHandler(string channelname, string message);
+
   public class RedisDataAccessProvider : DataAccessProvider, IDisposable
   {
-    private static StringBuilder errorlog = new StringBuilder();
+    private StringBuilder errorlog = new StringBuilder();
 
     #region private fields
     //private Socket _socket;
@@ -30,6 +35,15 @@ namespace TeamDev.Redis
 
     #endregion
 
+    #region Events
+
+    public event ChannelSubscribedHandler ChannelSubscribed;
+    public event ChannelUnsubscribedHandler ChannelUnsubscribed;
+    public event MessageReceivedHandler MessageReceived;
+
+    #endregion
+
+    #region Properties
     public LanguageItemCollection<LanguageList> List { get; private set; }
     public LanguageItemCollection<LanguageSet> Set { get; private set; }
     public LanguageItemCollection<LanguageSortedSet> SortedSet { get; private set; }
@@ -38,8 +52,8 @@ namespace TeamDev.Redis
     public LanguageKey Key { get; private set; }
     public LanguageTransactions Transaction { get; private set; }
     public LanguageMessaging Messaging { get; private set; }
-
     public int RenewConnectionPeriod { get; set; }
+    #endregion
 
     public void CheckConnectionStatus()
     {
@@ -101,6 +115,25 @@ namespace TeamDev.Redis
     ~RedisDataAccessProvider()
     {
       Dispose(false);
+    }
+
+    #endregion
+
+    #region EventRaiseMethods
+
+    internal void RaiseChannelSubscribedEvent(string channelname)
+    {
+      if (ChannelSubscribed != null) ChannelSubscribed(channelname);
+    }
+
+    internal void RaiseChannelUnsubscribedEvent(string channelname)
+    {
+      if (ChannelUnsubscribed != null) ChannelUnsubscribed(channelname);
+    }
+
+    internal void RaiseMessageReceivedEvend(string channelname, string message)
+    {
+      if (MessageReceived != null) MessageReceived(channelname, message);
     }
 
     #endregion
@@ -199,7 +232,7 @@ namespace TeamDev.Redis
       if (GetSocket() != null) SendCommand(RedisCommand.QUIT);
     }
 
-    private Socket GetSocket()
+    internal Socket GetSocket()
     {
       var tid = Thread.CurrentThread.ManagedThreadId;
 
@@ -217,7 +250,7 @@ namespace TeamDev.Redis
     }
 
     //private BufferedStream GetBStream()
-    private NetworkStream GetBStream()
+    internal NetworkStream GetBStream()
     {
       var tid = Thread.CurrentThread.ManagedThreadId;
       try
@@ -611,7 +644,7 @@ namespace TeamDev.Redis
     }
 
     [Conditional("DEBUG")]
-    public static void SendRedisClientExceptionLogToAuthor()
+    public void SendRedisClientExceptionLogToAuthor()
     {
       SmtpClient client = new SmtpClient("uhura.teamdev.it");
       MailMessage mm = new MailMessage();
@@ -627,4 +660,6 @@ namespace TeamDev.Redis
     #endregion
 
   }
+
+
 }
