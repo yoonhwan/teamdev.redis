@@ -4,18 +4,76 @@ using System.Linq;
 using System.Text;
 using TeamDev.Redis.Interface;
 using System.ComponentModel;
+using System.IO;
+using System.Threading;
+using System.Net.Sockets;
 
 namespace TeamDev.Redis.LanguageItems
 {
   public class LanguageMessaging : ILanguageItem, IComplexItem
   {
-    internal string _name;
-    internal RedisDataAccessProvider _provider;
+    internal volatile string _name;
+    internal volatile RedisDataAccessProvider _provider;
+
+    private volatile bool _wasbalancingcalls = false;
+    private volatile Thread _originalThread = Thread.CurrentThread;
+    private volatile Thread _readingThread = null;
 
     [Description(CommandDescriptions.PUBLISH)]
     public int Publish(string channel, string message)
     {
       return _provider.ReadInt(_provider.SendCommand(RedisCommand.PUBLISH, channel, message));
+    }
+
+    [Description(CommandDescriptions.SUBSCRIBE)]
+    public void Subscribe(params string[] channels)
+    {
+      _provider.SendCommand(RedisCommand.SUBSCRIBE, channels);
+
+      if (_readingThread == null || _readingThread.ThreadState != ThreadState.Running)
+      {
+        _wasbalancingcalls = _provider.Configuration.LogUnbalancedCommands;
+
+        _readingThread = new Thread(new ParameterizedThreadStart(ChannelsReadingThread));
+        _readingThread.IsBackground = true;
+        _readingThread.Start(new ProviderState() { Provider = _provider, Stream = _provider.GetBStream() });
+      }
+    }
+
+    void ChannelsReadingThread(object state)
+    {
+      var provider = state as ProviderState;
+
+      if (provider != null)
+      {
+        var stream = provider.Stream;
+        while (true)
+        {
+          while (!stream.DataAvailable)
+            Thread.Sleep(10);
+
+          var result = _provider.ReadMultiString();
+
+          if (result != null && result.Length == 3)
+          {
+            switch (result[0])
+            {
+              case "subscribe":
+                provider.Provider.RaiseChannelSubscribedEvent(result[1]);
+                break;
+              case "unsubscribe":
+                provider.Provider.RaiseChannelUnsubscribedEvent(result[1]);
+                if (result[2] == "0") return;
+                break;
+              case "message":
+                provider.Provider.RaiseMessageReceivedEvend(result[1], result[2]);
+                break;
+              default:
+                break;
+            }
+          }
+        }
+      }
     }
 
     void ILanguageItem.Configure(string name, RedisDataAccessProvider provider)
@@ -33,5 +91,11 @@ namespace TeamDev.Redis.LanguageItems
     {
       get { return _provider; }
     }
+  }
+
+  public class ProviderState
+  {
+    public RedisDataAccessProvider Provider { get; set; }
+    public NetworkStream Stream { get; set; }
   }
 }
