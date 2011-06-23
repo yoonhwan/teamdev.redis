@@ -611,7 +611,7 @@ namespace TeamDev.Redis
 
       var result = ReadData();
       if (result != null)
-        return Encoding.UTF8.GetString(ReadData());
+        return Encoding.UTF8.GetString(result);
       return null;
     }
 
