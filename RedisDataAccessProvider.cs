@@ -494,8 +494,9 @@ namespace TeamDev.Redis
 
       string r = ReadLine();
       Log(string.Format("R: {0}", r));
-      if (r.Length == 0)
-        throw new Exception("Zero length respose");
+
+      if (string.IsNullOrEmpty(r))
+        return null;
 
       char c = r[0];
       if (c == '-')
@@ -553,8 +554,9 @@ namespace TeamDev.Redis
 
       string r = ReadLine();
       Log(string.Format("R: {0}", r));
-      if (r.Length == 0)
-        throw new Exception("Zero length respose");
+
+      if (string.IsNullOrEmpty(r))
+        return null;
 
       char c = r[0];
       if (c == '-')
@@ -607,7 +609,10 @@ namespace TeamDev.Redis
       if (commandid != 0 && Configuration.LogUnbalancedCommands)
         _tracer.CheckBalancing(commandid);
 
-      return Encoding.UTF8.GetString(ReadData());
+      var result = ReadData();
+      if (result != null)
+        return Encoding.UTF8.GetString(ReadData());
+      return null;
     }
 
     private string ReadLine(int commandid = 0)
