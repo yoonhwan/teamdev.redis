@@ -626,6 +626,8 @@ namespace TeamDev.Redis
 
       //while (!bstream.DataAvailable)
       //  Thread.Sleep(10);
+      while (bstream.Length == 0)
+        Thread.Sleep(10);
 
       if (bstream.DataAvailable)
         while ((c = bstream.ReadByte()) != -1)
