@@ -625,10 +625,10 @@ namespace TeamDev.Redis
       int c;
       var bstream = GetBStream();
 
-      //while (!bstream.DataAvailable)
-      //  Thread.Sleep(10);
-      while (bstream.Length == 0)
+      while (!bstream.DataAvailable)
         Thread.Sleep(10);
+      //while (bstream.Length == 0)
+      //  Thread.Sleep(10);
 
       if (bstream.DataAvailable)
         while ((c = bstream.ReadByte()) != -1)
