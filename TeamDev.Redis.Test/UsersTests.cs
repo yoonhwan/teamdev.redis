@@ -88,6 +88,7 @@ namespace TeamDev.Redis.Test
       _redis.Configuration.LogUnbalancedCommands = true;
       _redis.WaitComplete(_redis.SendCommand(RedisCommand.FLUSHALL));
 
+
       _redis.Key.Exists("TEST");
       _redis.Set["MySet"].Add("setvalue1");
       _redis.Set["MySet"].Add("setvalue1");

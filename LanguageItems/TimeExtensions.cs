@@ -22,12 +22,6 @@ namespace TeamDev.Redis.LanguageItems
       return item.Provider.ReadInt(item.Provider.SendCommand(RedisCommand.EXPIRE, item.KeyName)) == 1;
     }
 
-    //public static bool Expire(this IComplexItem item, DateTime time)
-    //{
-    //  item.Provider.InternalSendCommand(Provides.RedisCommand.EXPIRE, item.KeyName, time.ToUniversalTime);
-    //  return item.Provider.ReadInt() == 1;
-    //}
-
     [Description(CommandDescriptions.TTL)]
     public static int TTL(this IComplexItem item)
     {      
