@@ -9,6 +9,7 @@ using TeamDev.Redis.LanguageItems;
 using TeamDev.Redis.Interface;
 using System.Threading;
 using System.Net.Mail;
+using System.ComponentModel;
 
 namespace TeamDev.Redis
 {
@@ -662,6 +663,28 @@ namespace TeamDev.Redis
       mm.IsBodyHtml = false;
 
       client.Send(mm);
+    }
+
+    #endregion
+
+    #region 
+
+    [Description(CommandDescriptions.EXPIRE)]
+    public  bool Expire(string keyname, int seconds)
+    {
+      return ReadInt(SendCommand(RedisCommand.EXPIRE, keyname, seconds.ToString())) == 1;
+    }
+
+    [Description(CommandDescriptions.PERSIST)]
+    public  bool Persist(string keyname)
+    {
+      return ReadInt(SendCommand(RedisCommand.EXPIRE, keyname)) == 1;
+    }
+
+    [Description(CommandDescriptions.TTL)]
+    public int TTL(string keyname)
+    {
+      return ReadInt(SendCommand(RedisCommand.TTL, keyname));
     }
 
     #endregion
