@@ -667,7 +667,7 @@ namespace TeamDev.Redis
 
     #endregion
 
-    #region 
+    #region Expiration and Time Management
 
     [Description(CommandDescriptions.EXPIRE)]
     public  bool Expire(string keyname, int seconds)
