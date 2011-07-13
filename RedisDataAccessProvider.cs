@@ -31,7 +31,7 @@ namespace TeamDev.Redis
     private volatile Dictionary<int, NetworkStream> _bstreams = new Dictionary<int, NetworkStream>();
     private volatile byte[] _end_data = new byte[] { (byte)'\r', (byte)'\n' };
     private volatile CommandTracing _tracer = new CommandTracing();
-    private DateTime _lastcommandcompleted = DateTime.MinValue;
+    private volatile Dictionary<int, DateTime> _lastcommandcompleted = new Dictionary<int, DateTime>();
     private volatile bool _checkingconnectionstatus = false;
 
     #endregion
@@ -54,6 +54,8 @@ namespace TeamDev.Redis
     public LanguageTransactions Transaction { get; private set; }
     public LanguageMessaging Messaging { get; private set; }
     public int RenewConnectionPeriod { get; set; }
+
+    public static bool ActivateDebugLog { get; set; }
     #endregion
 
     public void CheckConnectionStatus()
@@ -164,7 +166,7 @@ namespace TeamDev.Redis
 
       if (!_checkingconnectionstatus)
         if (RenewConnectionPeriod > 0)
-          if (DateTime.Now.Subtract(_lastcommandcompleted).TotalSeconds > RenewConnectionPeriod)
+          if (DateTime.Now.Subtract(GetLastCompletedCommandDate()).TotalSeconds > RenewConnectionPeriod)
           {
             _checkingconnectionstatus = true;
             CheckConnectionStatus();
@@ -263,6 +265,37 @@ namespace TeamDev.Redis
       finally
       {
         _socketslock.ReleaseLock();
+      }
+    }
+
+    private DateTime GetLastCompletedCommandDate()
+    {
+      var tid = Thread.CurrentThread.ManagedThreadId;
+      try
+      {
+        _socketslock.AcquireReaderLock(1000);
+        if (_lastcommandcompleted.ContainsKey(tid))
+          return _lastcommandcompleted[tid];
+        return DateTime.MinValue;
+      }
+      finally
+      {
+        _socketslock.ReleaseLock();
+      }
+    }
+
+    private void SetLastCompletedCommandDate(DateTime value)
+    {
+      var tid = Thread.CurrentThread.ManagedThreadId;
+      try
+      {
+        if (_lastcommandcompleted.ContainsKey(tid))
+          _lastcommandcompleted[tid] = value;
+        else
+          _lastcommandcompleted.Add(tid, value);
+      }
+      finally
+      {
       }
     }
 
@@ -626,7 +659,7 @@ namespace TeamDev.Redis
       var bstream = GetBStream();
 
       while (!bstream.DataAvailable)
-        Thread.Sleep(10);
+        Thread.Sleep(1);
       //while (bstream.Length == 0)
       //  Thread.Sleep(10);
 
@@ -640,15 +673,18 @@ namespace TeamDev.Redis
           sb.Append((char)c);
         }
 
-      _lastcommandcompleted = DateTime.Now;
+      SetLastCompletedCommandDate(DateTime.Now);
       return sb.ToString();
     }
 
     [Conditional("DEBUG")]
     private void Log(string fmt)
     {
-      Debug.WriteLine(fmt);
-      errorlog.AppendFormat("{1} {0}\r\n", fmt.Trim(), DateTime.Now.ToString("hh:mm:ss"));
+      if (ActivateDebugLog)
+      {
+        Debug.WriteLine(fmt);
+        errorlog.AppendFormat("{1} {0}\r\n", fmt.Trim(), DateTime.Now.ToString("hh:mm:ss"));
+      }
     }
 
     [Conditional("DEBUG")]
@@ -670,13 +706,13 @@ namespace TeamDev.Redis
     #region Expiration and Time Management
 
     [Description(CommandDescriptions.EXPIRE)]
-    public  bool Expire(string keyname, int seconds)
+    public bool Expire(string keyname, int seconds)
     {
       return ReadInt(SendCommand(RedisCommand.EXPIRE, keyname, seconds.ToString())) == 1;
     }
 
     [Description(CommandDescriptions.PERSIST)]
-    public  bool Persist(string keyname)
+    public bool Persist(string keyname)
     {
       return ReadInt(SendCommand(RedisCommand.EXPIRE, keyname)) == 1;
     }
