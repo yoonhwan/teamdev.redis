@@ -49,8 +49,8 @@ namespace TeamDev.Redis.LanguageItems
         var stream = provider.Stream;
         while (true)
         {
-          while (!stream.DataAvailable)
-            Thread.Sleep(10);
+          //while (!stream.DataAvailable)
+          //  Thread.Sleep(10);
 
           var result = _provider.ReadMultiString();
 
@@ -96,6 +96,7 @@ namespace TeamDev.Redis.LanguageItems
   public class ProviderState
   {
     public RedisDataAccessProvider Provider { get; set; }
-    public NetworkStream Stream { get; set; }
+    //public NetworkStream Stream { get; set; }
+    public BufferedStream Stream { get; set; }
   }
 }

@@ -27,8 +27,8 @@ namespace TeamDev.Redis
 
     private volatile ReaderWriterLock _socketslock = new ReaderWriterLock();
     private volatile Dictionary<int, Socket> _sockets = new Dictionary<int, Socket>();
-    //private volatile Dictionary<int, BufferedStream> _bstreams = new Dictionary<int, BufferedStream>();
-    private volatile Dictionary<int, NetworkStream> _bstreams = new Dictionary<int, NetworkStream>();
+    private volatile Dictionary<int, BufferedStream> _bstreams = new Dictionary<int, BufferedStream>();
+    //private volatile Dictionary<int, NetworkStream> _bstreams = new Dictionary<int, NetworkStream>();
     private volatile byte[] _end_data = new byte[] { (byte)'\r', (byte)'\n' };
     private volatile CommandTracing _tracer = new CommandTracing();
     private DateTime _lastcommandcompleted = DateTime.MinValue;
@@ -54,6 +54,8 @@ namespace TeamDev.Redis
     public LanguageTransactions Transaction { get; private set; }
     public LanguageMessaging Messaging { get; private set; }
     public int RenewConnectionPeriod { get; set; }
+
+    public static bool ActivateDebugLog { get; set; }
     #endregion
 
     public void CheckConnectionStatus()
@@ -200,6 +202,8 @@ namespace TeamDev.Redis
         return null;
       }
 
+      //newsocket.Blocking = true;
+
       _socketslock.UpgradeToWriterLock(1000);
 
       if (_sockets.ContainsKey(tid))
@@ -208,11 +212,11 @@ namespace TeamDev.Redis
         _sockets.Add(tid, newsocket);
 
       if (_bstreams.ContainsKey(tid))
-        _bstreams[tid] = new NetworkStream(newsocket);
-      //_bstreams[tid] = new BufferedStream(new NetworkStream(newsocket), 16 * 1024);
+        //_bstreams[tid] = new NetworkStream(newsocket);
+        _bstreams[tid] = new BufferedStream(new NetworkStream(newsocket), 16 * 1024);
       else
-        _bstreams.Add(tid, new NetworkStream(newsocket));
-      //_bstreams.Add(tid, new BufferedStream(new NetworkStream(newsocket), 16 * 1024));
+        //_bstreams.Add(tid, new NetworkStream(newsocket));
+        _bstreams.Add(tid, new BufferedStream(new NetworkStream(newsocket), 16 * 1024));
 
       if (Configuration.ReceiveTimeout > 0)
         _bstreams[tid].ReadTimeout = Configuration.ReceiveTimeout;
@@ -250,15 +254,16 @@ namespace TeamDev.Redis
       }
     }
 
-    //private BufferedStream GetBStream()
-    internal NetworkStream GetBStream()
+    internal BufferedStream GetBStream()
+    //internal NetworkStream GetBStream()
     {
       var tid = Thread.CurrentThread.ManagedThreadId;
       try
       {
         _socketslock.AcquireReaderLock(1000);
-        var result = _bstreams[tid];
-        return result;
+        if (_bstreams.ContainsKey(tid))
+          return _bstreams[tid];
+        return null;
       }
       finally
       {
@@ -295,6 +300,8 @@ namespace TeamDev.Redis
 
     public int SendCommand(RedisCommand command, params string[] args)
     {
+      //var bb = GetBStream();
+      //if (bb != null) bb.
 
       // http://redis.io/topics/protocol
       // new redis communication protocol specifications
@@ -315,7 +322,7 @@ namespace TeamDev.Redis
       try
       {
         Log("S: " + sb.ToString());
-        this.Connect().Send(r);
+        this.Connect().Send(r, r.Length, SocketFlags.None);
       }
       catch (SocketException e)
       {
@@ -334,6 +341,9 @@ namespace TeamDev.Redis
     {
       // http://redis.io/topics/protocol
       // new redis communication protocol specifications
+
+      //var bb = GetBStream();
+      //if (bb != null) bb.Flush();
 
       StringBuilder sb = new StringBuilder();
 
@@ -358,7 +368,7 @@ namespace TeamDev.Redis
       {
         Log("S: " + sb.ToString());
         // Send command and args. 
-        socket.Send(r);
+        socket.Send(r, r.Length, SocketFlags.None);
 
         // Send data
         if (datas != null && datas.Length > 0)
@@ -386,6 +396,9 @@ namespace TeamDev.Redis
 
       // http://redis.io/topics/protocol
       // new redis communication protocol specifications
+
+      //var bb = GetBStream();
+      //if (bb != null) bb.Flush();
 
       StringBuilder sb = new StringBuilder();
 
@@ -425,7 +438,9 @@ namespace TeamDev.Redis
       try
       {
         Log("S: " + sb.ToString());
-        socket.Send(ms.ToArray());
+        var buffer = ms.ToArray();
+        socket.Blocking = true;
+        socket.Send(buffer, buffer.Length, SocketFlags.None);
       }
       catch (SocketException e)
       {
@@ -471,14 +486,14 @@ namespace TeamDev.Redis
       if (commandid != 0 && Configuration.LogUnbalancedCommands)
         _tracer.CheckBalancing(commandid);
 
+      char c = (char)ReadByte();
       var s = ReadLine();
       Log(string.Format("R: {0}", s));
 
-      var c = s[0];
-      if (s[0] == ':')
+      if (c == ':' || c == '$')
       {
         int n = 0;
-        if (int.TryParse(s.Substring(1), out n))
+        if (int.TryParse(s, out n))
           return n;
       }
 
@@ -493,15 +508,15 @@ namespace TeamDev.Redis
       if (commandid != 0 && Configuration.LogUnbalancedCommands)
         _tracer.CheckBalancing(commandid);
 
+      char c = (char)ReadByte();
       string r = ReadLine();
       Log(string.Format("R: {0}", r));
 
       if (string.IsNullOrEmpty(r))
         return null;
 
-      char c = r[0];
       if (c == '-')
-        throw new Exception(r.StartsWith("-ERR") ? r.Substring(5) : r.Substring(1));
+        throw new Exception(r.StartsWith("ERR") ? r.Substring(4) : r);
 
       if (c == '$')
       {
@@ -510,21 +525,21 @@ namespace TeamDev.Redis
         int n;
 
         var bstream = GetBStream();
-        if (Int32.TryParse(r.Substring(1), out n))
+        if (Int32.TryParse(r, out n))
         {
           byte[] retbuf = new byte[n];
           if (n > 0)
           {
 
-            int bytesRead = 0;
-            do
+            int offset = 0;
+            while (n > 0)
             {
-              int read = bstream.Read(retbuf, bytesRead, n - bytesRead);
-              if (read < 1)
+              int read = bstream.Read(retbuf, offset, n);
+              if (read <= 0)
                 throw new Exception("Invalid termination mid stream");
-              bytesRead += read;
+              offset += read;
+              n -= read;
             }
-            while (bytesRead < n);
           }
           if (bstream.ReadByte() != '\r' || bstream.ReadByte() != '\n')
             throw new Exception("Invalid termination");
@@ -539,7 +554,7 @@ namespace TeamDev.Redis
       if (c == '*')
       {
         int n;
-        if (Int32.TryParse(r.Substring(1), out n))
+        if (Int32.TryParse(r, out n))
           return n <= 0 ? new byte[0] : ReadData();
 
         throw new Exception("Unexpected length parameter" + r);
@@ -553,28 +568,35 @@ namespace TeamDev.Redis
       if (commandid != 0 && Configuration.LogUnbalancedCommands)
         _tracer.CheckBalancing(commandid);
 
+      char c = (char)ReadByte();
       string r = ReadLine();
       Log(string.Format("R: {0}", r));
 
       if (string.IsNullOrEmpty(r))
         return null;
 
-      char c = r[0];
-      if (c == '-')
-        throw new Exception(r.StartsWith("-ERR") ? r.Substring(5) : r.Substring(1));
 
-      List<byte[]> result = new List<byte[]>();
+      if (c == '-')
+        throw new Exception(r.StartsWith("ERR") ? r.Substring(4) : r);
+
+      byte[][] result = null;
 
       if (c == '*')
       {
         int n;
-        if (Int32.TryParse(r.Substring(1), out n))
+        if (Int32.TryParse(r, out n))
+        {
+          if (n == -1)
+            return new byte[0][];
+
+          result = new byte[n][];
           for (int i = 0; i < n; i++)
           {
-            result.Add(ReadData());
+            result[i] = ReadData();
           }
+        }
       }
-      return result.ToArray();
+      return result;
     }
 
     public string[] ReadMultiString(int commandid = 0)
@@ -582,25 +604,30 @@ namespace TeamDev.Redis
       if (commandid != 0 && Configuration.LogUnbalancedCommands)
         _tracer.CheckBalancing(commandid);
 
+      char c = (char)ReadByte();
       string r = ReadLine();
       Log(string.Format("R: {0}", r));
       if (r.Length == 0)
         throw new Exception("Zero length respose");
 
-      char c = r[0];
       if (c == '-')
-        throw new Exception(r.StartsWith("-ERR") ? r.Substring(5) : r.Substring(1));
+        throw new Exception(r.StartsWith("ERR") ? r.Substring(4) : r);
 
       List<string> result = new List<string>();
 
       if (c == '*')
       {
         int n;
-        if (Int32.TryParse(r.Substring(1), out n))
+        if (Int32.TryParse(r, out n))
+        {
+          if (n == -1)
+            return new string[0];
+
           for (int i = 0; i < n; i++)
           {
             result.Add(ReadString());
           }
+        }
       }
       return result.ToArray();
     }
@@ -616,6 +643,11 @@ namespace TeamDev.Redis
       return null;
     }
 
+    private int ReadByte()
+    {
+      return GetBStream().ReadByte();
+    }
+
     private string ReadLine(int commandid = 0)
     {
       if (commandid != 0 && Configuration.LogUnbalancedCommands)
@@ -625,20 +657,20 @@ namespace TeamDev.Redis
       int c;
       var bstream = GetBStream();
 
-      while (!bstream.DataAvailable)
-        Thread.Sleep(10);
+      //while (!bstream.DataAvailable)
+      //  Thread.Sleep(10);
       //while (bstream.Length == 0)
       //  Thread.Sleep(10);
 
-      if (bstream.DataAvailable)
-        while ((c = bstream.ReadByte()) != -1)
-        {
-          if (c == '\r')
-            continue;
-          if (c == '\n')
-            break;
-          sb.Append((char)c);
-        }
+      //if (bstream.DataAvailable)
+      while ((c = bstream.ReadByte()) != -1)
+      {
+        if (c == '\r')
+          continue;
+        if (c == '\n')
+          break;
+        sb.Append((char)c);
+      }
 
       _lastcommandcompleted = DateTime.Now;
       return sb.ToString();
@@ -647,8 +679,11 @@ namespace TeamDev.Redis
     [Conditional("DEBUG")]
     private void Log(string fmt)
     {
-      Debug.WriteLine(fmt);
-      errorlog.AppendFormat("{1} {0}\r\n", fmt.Trim(), DateTime.Now.ToString("hh:mm:ss"));
+      if (ActivateDebugLog)
+      {
+        Debug.WriteLine(fmt);
+        errorlog.AppendFormat("{1} {0}\r\n", fmt.Trim(), DateTime.Now.ToString("hh:mm:ss"));
+      }
     }
 
     [Conditional("DEBUG")]
@@ -670,13 +705,13 @@ namespace TeamDev.Redis
     #region Expiration and Time Management
 
     [Description(CommandDescriptions.EXPIRE)]
-    public  bool Expire(string keyname, int seconds)
+    public bool Expire(string keyname, int seconds)
     {
       return ReadInt(SendCommand(RedisCommand.EXPIRE, keyname, seconds.ToString())) == 1;
     }
 
     [Description(CommandDescriptions.PERSIST)]
-    public  bool Persist(string keyname)
+    public bool Persist(string keyname)
     {
       return ReadInt(SendCommand(RedisCommand.EXPIRE, keyname)) == 1;
     }
@@ -690,6 +725,4 @@ namespace TeamDev.Redis
     #endregion
 
   }
-
-
 }
