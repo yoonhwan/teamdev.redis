@@ -457,7 +457,7 @@ namespace TeamDev.Redis
       var socket = this.Connect();
       try
       {
-        Log("S: " + sb.ToString());
+        Log("S: " + sb.ToString(), datas);
         socket.Send(ms.ToArray());
       }
       catch (SocketException e)
@@ -678,11 +678,17 @@ namespace TeamDev.Redis
     }
 
     [Conditional("DEBUG")]
-    private void Log(string fmt)
+    private void Log(string fmt, IDictionary<string, byte[]> datas = null)
     {
       if (ActivateDebugLog)
       {
         Debug.WriteLine(fmt);
+        if (datas != null)
+          foreach (var kv in datas)
+          {
+            Debug.WriteLine(kv.Key, Encoding.UTF8.GetString(kv.Value));
+          }
+
         errorlog.AppendFormat("{1} {0}\r\n", fmt.Trim(), DateTime.Now.ToString("hh:mm:ss"));
       }
     }
