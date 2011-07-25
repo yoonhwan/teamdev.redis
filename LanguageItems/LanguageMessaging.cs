@@ -50,7 +50,7 @@ namespace TeamDev.Redis.LanguageItems
         while (true)
         {
           while (!stream.DataAvailable)
-            Thread.Sleep(10);
+            Thread.Sleep(this._provider.Configuration.ReceiveDelayms);
 
           var result = _provider.ReadMultiString();
 

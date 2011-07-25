@@ -659,7 +659,7 @@ namespace TeamDev.Redis
       var bstream = GetBStream();
 
       while (!bstream.DataAvailable)
-        Thread.Sleep(1);
+        Thread.Sleep(this.Configuration.ReceiveDelayms);
       //while (bstream.Length == 0)
       //  Thread.Sleep(10);
 
@@ -732,6 +732,4 @@ namespace TeamDev.Redis
     #endregion
 
   }
-
-
 }

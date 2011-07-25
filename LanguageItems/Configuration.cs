@@ -16,6 +16,7 @@ namespace TeamDev.Redis.LanguageItems
     public string DataBase { get; set; }
     public int SendTimeout { get; set; }
     public int ReceiveTimeout { get; set; }
+    public int ReceiveDelayms { get; set; }
 
     public bool LogUnbalancedCommands { get; set; }
 
@@ -24,6 +25,8 @@ namespace TeamDev.Redis.LanguageItems
       Host = "localhost";
       Port = 6379;
       SendTimeout = -1;
+
+      ReceiveDelayms = 1;
 
       LogUnbalancedCommands = false;
     }
