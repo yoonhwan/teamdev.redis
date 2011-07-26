@@ -188,16 +188,17 @@ namespace TeamDev.Redis
       //}
 
       var newsocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-      //newsocket.NoDelay = true;
+      newsocket.NoDelay = Configuration.NoDelaySocket;
       if (Configuration.SendTimeout > 0)
         newsocket.SendTimeout = Configuration.SendTimeout;
 
       if (Configuration.ReceiveTimeout > 0)
         newsocket.ReceiveTimeout = Configuration.ReceiveTimeout;
 
-      newsocket.Connect(Configuration.Host, Configuration.Port);
+      newsocket.Connect(Configuration.Host, Configuration.Port);      
       if (!newsocket.Connected)
       {
+        newsocket.Disconnect(false);
         newsocket.Close();
         return null;
       }
@@ -318,7 +319,12 @@ namespace TeamDev.Redis
     public override void Close()
     {
       Quit();
-      GetSocket().Close();
+      var socket = GetSocket();
+      if(socket != null)
+      {
+        socket.Disconnect(false);
+        socket.Close();
+      }
       RemoveSocket();
     }
 
