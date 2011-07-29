@@ -36,7 +36,11 @@ namespace TeamDev.Redis.LanguageItems
 
         _readingThread = new Thread(new ParameterizedThreadStart(ChannelsReadingThread));
         _readingThread.IsBackground = true;
+        _provider.ShareConnectionWithThread(_readingThread.ManagedThreadId);
+
         _readingThread.Start(new ProviderState() { Provider = _provider, Stream = _provider.GetBStream() });
+
+        _provider.RemoveConnectionFromThread(Thread.CurrentThread.ManagedThreadId);
       }
     }
 
@@ -49,28 +53,34 @@ namespace TeamDev.Redis.LanguageItems
         var stream = provider.Stream;
         while (true)
         {
+          //_provider.Connect();
+
           while (!stream.DataAvailable)
             Thread.Sleep(this._provider.Configuration.ReceiveDelayms);
 
-          var result = _provider.ReadMultiString();
+          var operation = _provider.ReadString();
 
-          if (result != null && result.Length == 3)
+          switch (operation)
           {
-            switch (result[0])
-            {
-              case "subscribe":
-                provider.Provider.RaiseChannelSubscribedEvent(result[1]);
-                break;
-              case "unsubscribe":
-                provider.Provider.RaiseChannelUnsubscribedEvent(result[1]);
-                if (result[2] == "0") return;
-                break;
-              case "message":
-                provider.Provider.RaiseMessageReceivedEvend(result[1], result[2]);
-                break;
-              default:
-                break;
-            }
+            case "subscribe":
+              var channel = _provider.ReadString();
+              var clients = _provider.ReadInt();
+              provider.Provider.RaiseChannelSubscribedEvent(channel);
+              break;
+            case "unsubscribe":
+              var uchannel = _provider.ReadString();
+              var uclients = _provider.ReadInt();
+              provider.Provider.RaiseChannelUnsubscribedEvent(uchannel);
+
+              if (uclients == 0) return;
+              break;
+            case "message":
+              var mchannel = _provider.ReadString();
+              var message = _provider.ReadString();
+              provider.Provider.RaiseMessageReceivedEvend(mchannel, message);
+              break;
+            default:
+              break;
           }
         }
       }

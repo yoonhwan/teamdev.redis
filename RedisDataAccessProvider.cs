@@ -34,6 +34,7 @@ namespace TeamDev.Redis
     private volatile Dictionary<int, DateTime> _lastcommandcompleted = new Dictionary<int, DateTime>();
     private volatile bool _checkingconnectionstatus = false;
 
+
     #endregion
 
     #region Events
@@ -195,7 +196,7 @@ namespace TeamDev.Redis
       if (Configuration.ReceiveTimeout > 0)
         newsocket.ReceiveTimeout = Configuration.ReceiveTimeout;
 
-      newsocket.Connect(Configuration.Host, Configuration.Port);      
+      newsocket.Connect(Configuration.Host, Configuration.Port);
       if (!newsocket.Connected)
       {
         newsocket.Disconnect(false);
@@ -320,7 +321,7 @@ namespace TeamDev.Redis
     {
       Quit();
       var socket = GetSocket();
-      if(socket != null)
+      if (socket != null)
       {
         socket.Disconnect(false);
         socket.Close();
@@ -328,6 +329,32 @@ namespace TeamDev.Redis
       RemoveSocket();
     }
 
+    internal void ShareConnectionWithThread(int threadid)
+    {
+      var socket = GetSocket();
+      var nstream = GetBStream();
+
+      var tid = Thread.CurrentThread.ManagedThreadId;
+
+      if (_bstreams.ContainsKey(threadid))
+        _bstreams[threadid] = nstream;
+      else
+        _bstreams.Add(threadid, nstream);
+
+      if (_sockets.ContainsKey(threadid))
+        _sockets[threadid] = socket;
+      else
+        _sockets.Add(threadid, socket);
+    }
+
+    internal void RemoveConnectionFromThread(int threadid)
+    {
+      if (_sockets.ContainsKey(threadid))
+        _sockets.Remove(threadid);
+
+      if (_bstreams.ContainsKey(threadid))
+        _bstreams.Remove(threadid);
+    }
     #endregion
 
     #region communication methods

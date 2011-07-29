@@ -63,6 +63,36 @@ namespace TeamDev.Redis.Test
     #endregion
 
     [TestMethod]
+    public void TestPUBSUB()
+    {
+      RedisDataAccessProvider pp = new RedisDataAccessProvider();
+
+      pp.ChannelSubscribed += new ChannelSubscribedHandler(pp_ChannelSubscribed);
+      pp.MessageReceived += new MessageReceivedHandler(pp_MessageReceived);
+
+      pp.Messaging.Subscribe("message");
+
+      pp.Messaging.Publish("message", "prova1");
+      pp.Messaging.Publish("message", "prova2");
+      pp.Messaging.Publish("message", "prova3");
+      pp.Messaging.Publish("message", "prova4");
+      pp.Messaging.Publish("message", "prova5");
+      pp.Messaging.Publish("message", "prova6");
+
+      Thread.Sleep(1000000);
+    }
+
+    void pp_MessageReceived(string channelname, string message)
+    {
+      Debug.WriteLine(string.Format("{0} - {1} ", channelname, message));
+    }
+
+    void pp_ChannelSubscribed(string channelname)
+    {
+      Debug.WriteLine(channelname);
+    }
+
+    [TestMethod]
     public void ExistsAfter_DEL_SREM_Bug_SIMULATION1()
     {
       _redis.Configuration.LogUnbalancedCommands = true;
