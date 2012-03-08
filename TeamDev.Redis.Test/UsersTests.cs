@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Text;
 using System.Collections.Generic;
-using System.Linq;
+
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.Diagnostics;
 using System.Threading;
@@ -18,8 +18,7 @@ namespace TeamDev.Redis.Test
 
     public UsersTests()
     {
-      //_redis.Configuration.Host = "192.168.1.81";
-      _redis.Configuration.Host = "95.110.227.122";
+      _redis.Configuration.Host = "127.0.0.1";
     }
 
     private TestContext testContextInstance;
@@ -90,6 +89,24 @@ namespace TeamDev.Redis.Test
     void pp_ChannelSubscribed(string channelname)
     {
       Debug.WriteLine(channelname);
+    }
+
+    [TestMethod]
+    public void TestPUBSUB_Bug1()
+    {
+      RedisDataAccessProvider pp = new RedisDataAccessProvider();
+      RedisDataAccessProvider.ActivateDebugLog = true;
+
+      pp.ChannelSubscribed += new ChannelSubscribedHandler(pp_ChannelSubscribed);
+      pp.MessageReceived += new MessageReceivedHandler(pp_MessageReceived);
+
+      pp.Messaging.Subscribe("message", "message2");
+
+      pp.Messaging.Publish("message", "test1");
+      pp.Messaging.Publish("message", "test2");
+
+      Thread.Sleep(1000000);
+
     }
 
     [TestMethod]
